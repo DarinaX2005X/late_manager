@@ -33,7 +33,7 @@ public class VacationConfirmHandler {
             return;
         }
         if (!"Да".equals(text)) {
-            ctx.reply("<b>❌ ОШИБКА</b>\n\n" + BotMessages.MSG_CONFIRM_YES_BACK, "HTML", null, Keyboards.confirmYesBack());
+            ctx.reply(BotMessages.err(BotMessages.MSG_CONFIRM_YES_BACK), "HTML", null, Keyboards.confirmYesBack());
             return;
         }
         Boolean newStatus = session.getData("pending_vacation_status", Boolean.class);

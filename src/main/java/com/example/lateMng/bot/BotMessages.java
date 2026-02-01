@@ -11,4 +11,8 @@ public final class BotMessages {
     public static final String MSG_ENTER_DEPT_NUMBER = "Введите номер отдела для управления.";
     public static final String MSG_ENTER_USER_NUMBER = "Введите номер пользователя.";
     public static final String MSG_UNKNOWN_COMMAND = "Извините, такая команда не найдена. Нажмите /start, чтобы вернуться в главное меню.";
+
+    public static String err(String msg) {
+        return "<b>❌ ОШИБКА</b>\n\n" + msg;
+    }
 }

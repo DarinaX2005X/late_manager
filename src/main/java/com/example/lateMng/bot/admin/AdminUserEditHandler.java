@@ -91,7 +91,7 @@ public class AdminUserEditHandler {
                 int num = Integer.parseInt(ctx.getText().trim());
                 List<Department> depts = userService.getDepartments();
                 if (depts.isEmpty() || num < 1 || num > depts.size()) {
-                    ctx.reply("<b>❌ ОШИБКА</b>\n\n" + BotMessages.MSG_BAD_DEPT_NUMBER, "HTML", null, Keyboards.back());
+                    ctx.reply(BotMessages.err(BotMessages.MSG_BAD_DEPT_NUMBER), "HTML", null, Keyboards.back());
                     return;
                 }
                 Department dept = depts.get(num - 1);
@@ -116,7 +116,7 @@ public class AdminUserEditHandler {
         }
         String role = "Сотрудник".equals(ctx.getText()) ? "employee" : "Начальник".equals(ctx.getText()) ? "manager" : null;
         if (role == null) {
-            ctx.reply("<b>❌ ОШИБКА</b>\n\nНеверная роль.", "HTML", null, Keyboards.back());
+            ctx.reply(BotMessages.err("Неверная роль."), "HTML", null, Keyboards.back());
             return;
         }
         Long targetUserId = session.getData("target_user_id", Long.class);
@@ -186,7 +186,7 @@ public class AdminUserEditHandler {
                             .toList()
                     : userService.getDepartments();
             if (depts.isEmpty()) {
-                ctx.reply("<b>❌ ОШИБКА</b>\n\nНет отделов для выбора.", "HTML", null, Keyboards.back());
+                ctx.reply(BotMessages.err("Нет отделов для выбора."), "HTML", null, Keyboards.back());
                 return;
             }
             StringBuilder sb = new StringBuilder("<b>ВЫБОР ОТДЕЛА</b>\n\n");
@@ -225,7 +225,7 @@ public class AdminUserEditHandler {
         }
         String role = "Сотрудник".equals(ctx.getText()) ? "employee" : "Начальник".equals(ctx.getText()) ? "manager" : null;
         if (role == null) {
-            ctx.reply("<b>❌ ОШИБКА</b>\n\nНеверная роль.", "HTML", null, Keyboards.back());
+            ctx.reply(BotMessages.err("Неверная роль."), "HTML", null, Keyboards.back());
             return;
         }
         Long editingUserId = session.getData("editing_user_id", Long.class);
@@ -247,7 +247,7 @@ public class AdminUserEditHandler {
             @SuppressWarnings("unchecked")
             List<Integer> deptIds = (List<Integer>) session.getData("transfer_depts", List.class);
             if (deptIds == null || deptIds.isEmpty() || num < 1 || num > deptIds.size()) {
-                ctx.reply("<b>❌ ОШИБКА</b>\n\n" + BotMessages.MSG_BAD_DEPT_NUMBER, "HTML", null, Keyboards.back());
+                ctx.reply(BotMessages.err(BotMessages.MSG_BAD_DEPT_NUMBER), "HTML", null, Keyboards.back());
                 return;
             }
             Integer deptId = deptIds.get(num - 1);
@@ -264,7 +264,7 @@ public class AdminUserEditHandler {
             ctx.reply(msg, "HTML", null, null);
             returnToUserList(ctx, session);
         } catch (NumberFormatException e) {
-            ctx.reply("<b>❌ ОШИБКА</b>\n\nВведите номер отдела.", "HTML", null, Keyboards.back());
+            ctx.reply(BotMessages.err("Введите номер отдела."), "HTML", null, Keyboards.back());
         }
     }
 
@@ -293,7 +293,7 @@ public class AdminUserEditHandler {
             ctx.reply("Пользователь удален из системы.", "HTML", null, null);
             returnToUserList(ctx, session);
         } else {
-            ctx.reply("<b>❌ ОШИБКА</b>\n\n" + BotMessages.MSG_CONFIRM_YES_BACK, "HTML", null, Keyboards.confirmYesBack());
+            ctx.reply(BotMessages.err(BotMessages.MSG_CONFIRM_YES_BACK), "HTML", null, Keyboards.confirmYesBack());
         }
     }
 

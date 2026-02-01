@@ -1,6 +1,7 @@
 package com.example.lateMng.bot;
 
 import com.example.lateMng.entity.User;
+import com.example.lateMng.bot.BotMessages;
 import com.example.lateMng.service.UserService;
 import com.kaleert.nyagram.command.CommandContext;
 import com.kaleert.nyagram.fsm.SessionManager;
@@ -124,7 +125,7 @@ public class ReportFlowHandler {
         User dbUser = userService.getUserWithDepartment(userId).orElse(null);
         if (dbUser == null || dbUser.getDepartment() == null) {
             sessionManager.clearSession(userId);
-            ctx.reply("<b>❌ ОШИБКА</b>\n\nВы не привязаны к отделу.\nОбратитесь к администратору.",
+            ctx.reply(BotMessages.err("Вы не привязаны к отделу.\nОбратитесь к администратору."),
                     "HTML", null, Keyboards.mainMenu(false, false));
             return;
         }
@@ -136,7 +137,7 @@ public class ReportFlowHandler {
 
         String confirmText = sentCount > 0
                 ? "<b>✅ ОТЧЕТ ОТПРАВЛЕН</b>\n\nНачальство уведомлено\nПолучателей: <b>" + sentCount + "</b>"
-                : "<b>❌ ОШИБКА</b>\n\nНет получателей, никому не отправлено.";
+                : BotMessages.err("Нет получателей, никому не отправлено.");
         ctx.reply(confirmText, "HTML", null,
                 Keyboards.mainMenu(dbUser.getIsOnVacation(), Boolean.TRUE.equals(dbUser.getIsAdmin())));
         sessionManager.clearSession(userId);

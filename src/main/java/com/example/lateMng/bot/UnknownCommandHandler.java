@@ -23,6 +23,6 @@ public class UnknownCommandHandler {
         if (sessionManager.getSession(uid) != null) {
             return;
         }
-        ctx.reply("<b>❌ ОШИБКА</b>\n\n" + BotMessages.MSG_UNKNOWN_COMMAND, "HTML", null, null);
+        ctx.reply(BotMessages.err(BotMessages.MSG_UNKNOWN_COMMAND), "HTML", null, null);
     }
 }

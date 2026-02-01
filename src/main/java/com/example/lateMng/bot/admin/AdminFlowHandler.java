@@ -6,6 +6,7 @@ import com.example.lateMng.bot.Keyboards;
 import com.example.lateMng.entity.Department;
 import com.example.lateMng.entity.User;
 import com.example.lateMng.service.UserService;
+import com.kaleert.nyagram.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import com.kaleert.nyagram.command.CommandContext;
 import com.kaleert.nyagram.fsm.SessionManager;
 import com.kaleert.nyagram.fsm.UserSession;
@@ -42,6 +43,22 @@ public class AdminFlowHandler {
         }
     }
 
+    private Long parseSelectedId(CommandContext ctx, UserSession session, String listKey, String parseErrorMsg, ReplyKeyboardMarkup keyboard) {
+        try {
+            int num = Integer.parseInt(ctx.getText().trim());
+            @SuppressWarnings("unchecked")
+            List<Long> ids = (List<Long>) session.getData(listKey, List.class);
+            if (ids == null || ids.isEmpty() || num < 1 || num > ids.size()) {
+                ctx.reply(BotMessages.err(BotMessages.MSG_BAD_NUMBER), "HTML", null, keyboard);
+                return null;
+            }
+            return ids.get(num - 1);
+        } catch (NumberFormatException e) {
+            ctx.reply(BotMessages.err(parseErrorMsg), "HTML", null, keyboard);
+            return null;
+        }
+    }
+
     @StateAction(FsmStates.ADMIN_HOME)
     public void onAdminHome(CommandContext ctx, UserSession session) {
         String text = ctx.getText();
@@ -68,7 +85,7 @@ public class AdminFlowHandler {
             AdminFlowService.showSupervisorsScreen(ctx, sessionManager, userService);
             return;
         }
-        ctx.reply("<b>❌ ОШИБКА</b>\n\nНеизвестная команда. Выберите пункт меню.", "HTML", null, Keyboards.adminHome());
+        ctx.reply(BotMessages.err("Неизвестная команда. Выберите пункт меню."), "HTML", null, Keyboards.adminHome());
     }
 
     @StateAction(FsmStates.ADMIN_SELECTING_DEPT)
@@ -87,7 +104,7 @@ public class AdminFlowHandler {
             int num = Integer.parseInt(text.trim());
             List<Department> depts = userService.getDepartments();
             if (depts.isEmpty() || num < 1 || num > depts.size()) {
-                ctx.reply("<b>❌ ОШИБКА</b>\n\n" + BotMessages.MSG_BAD_DEPT_NUMBER, "HTML", null, Keyboards.deptsList());
+                ctx.reply(BotMessages.err(BotMessages.MSG_BAD_DEPT_NUMBER), "HTML", null, Keyboards.deptsList());
                 return;
             }
             Department dept = depts.get(num - 1);
@@ -98,7 +115,7 @@ public class AdminFlowHandler {
             session.putData("employees_list", ids);
             AdminFlowService.showDepartmentInfo(ctx, dept.getId(), dept.getName(), ids, sessionManager, userService);
         } catch (NumberFormatException e) {
-            ctx.reply("<b>❌ ОШИБКА</b>\n\n" + BotMessages.MSG_ENTER_DEPT_NUMBER, "HTML", null, Keyboards.deptsList());
+            ctx.reply(BotMessages.err(BotMessages.MSG_ENTER_DEPT_NUMBER), "HTML", null, Keyboards.deptsList());
         }
     }
 
@@ -114,7 +131,7 @@ public class AdminFlowHandler {
             ctx.reply("<b>✅ ОТДЕЛ СОЗДАН</b>\n\n<b>Название:</b> " + deptName, "HTML", null, Keyboards.adminHome());
             return;
         }
-        ctx.reply("<b>❌ ОШИБКА</b>\n\nОтдел с таким названием уже существует.", "HTML", null, Keyboards.back());
+        ctx.reply(BotMessages.err("Отдел с таким названием уже существует."), "HTML", null, Keyboards.back());
     }
 
     @StateAction(FsmStates.ADMIN_SELECTING_USER)
@@ -127,7 +144,7 @@ public class AdminFlowHandler {
             int num = Integer.parseInt(ctx.getText().trim());
             List<User> users = userService.getPendingUsers();
             if (users.isEmpty() || num < 1 || num > users.size()) {
-                ctx.reply("<b>❌ ОШИБКА</b>\n\n" + BotMessages.MSG_BAD_NUMBER, "HTML", null, Keyboards.back());
+                ctx.reply(BotMessages.err(BotMessages.MSG_BAD_NUMBER), "HTML", null, Keyboards.back());
                 return;
             }
             User user = users.get(num - 1);
@@ -138,7 +155,7 @@ public class AdminFlowHandler {
                     "HTML", null, Keyboards.nameCheck());
             sessionManager.updateState(ctx.getUserId(), FsmStates.ADMIN_EDITING_USER_NAME);
         } catch (NumberFormatException e) {
-            ctx.reply("<b>❌ ОШИБКА</b>\n\nВведите номер заявки.", "HTML", null, Keyboards.back());
+            ctx.reply(BotMessages.err("Введите номер заявки."), "HTML", null, Keyboards.back());
         }
     }
 
@@ -148,27 +165,17 @@ public class AdminFlowHandler {
             goToAdminHome(ctx);
             return;
         }
-        try {
-            int num = Integer.parseInt(ctx.getText().trim());
-            @SuppressWarnings("unchecked")
-            List<Long> ids = (List<Long>) session.getData("employees_list", List.class);
-            if (ids == null || ids.isEmpty() || num < 1 || num > ids.size()) {
-                ctx.reply("<b>❌ ОШИБКА</b>\n\n" + BotMessages.MSG_BAD_NUMBER, "HTML", null, Keyboards.back());
-                return;
-            }
-            Long userId = ids.get(num - 1);
-            User user = userService.getUser(userId).orElse(null);
-            if (user == null) {
-                ctx.reply("<b>❌ ОШИБКА</b>\n\nПользователь не найден.", "HTML", null, Keyboards.back());
-                return;
-            }
-            session.putData("editing_user_id", userId);
-            session.putData("current_dept_id", null);
-            session.putData("current_dept_name", "Без отдела");
-            AdminFlowService.showUserEditor(ctx, user, session, sessionManager);
-        } catch (NumberFormatException e) {
-            ctx.reply("<b>❌ ОШИБКА</b>\n\n" + BotMessages.MSG_ENTER_USER_NUMBER, "HTML", null, Keyboards.back());
+        Long userId = parseSelectedId(ctx, session, "employees_list", BotMessages.MSG_ENTER_USER_NUMBER, Keyboards.back());
+        if (userId == null) return;
+        User user = userService.getUser(userId).orElse(null);
+        if (user == null) {
+            ctx.reply(BotMessages.err("Пользователь не найден."), "HTML", null, Keyboards.back());
+            return;
         }
+        session.putData("editing_user_id", userId);
+        session.putData("current_dept_id", null);
+        session.putData("current_dept_name", "Без отдела");
+        AdminFlowService.showUserEditor(ctx, user, session, sessionManager);
     }
 
     @StateAction(FsmStates.ADMIN_MANAGING_SUPERVISORS)
@@ -183,7 +190,7 @@ public class AdminFlowHandler {
             var supervisorIds = supervisors.stream().map(User::getUserId).toList();
             var candidates = allUsers.stream().filter(u -> !supervisorIds.contains(u.getUserId())).toList();
             if (candidates.isEmpty()) {
-                ctx.reply("<b>❌ ОШИБКА</b>\n\nНет пользователей для добавления.", "HTML", null, Keyboards.back());
+                ctx.reply(BotMessages.err("Нет пользователей для добавления."), "HTML", null, Keyboards.back());
                 return;
             }
             StringBuilder sb = new StringBuilder("<b>👥 ДОБАВИТЬ ОТВЕТСТВЕННОГО</b>\n\n");
@@ -196,21 +203,11 @@ public class AdminFlowHandler {
             sessionManager.updateState(ctx.getUserId(), FsmStates.ADMIN_ADDING_SUPERVISOR);
             return;
         }
-        try {
-            int num = Integer.parseInt(ctx.getText().trim());
-            @SuppressWarnings("unchecked")
-            List<Long> ids = (List<Long>) session.getData("supervisor_ids", List.class);
-            if (ids == null || ids.isEmpty() || num < 1 || num > ids.size()) {
-                ctx.reply("<b>❌ ОШИБКА</b>\n\n" + BotMessages.MSG_BAD_NUMBER, "HTML", null, Keyboards.back());
-                return;
-            }
-            Long uid = ids.get(num - 1);
-            userService.setSupervisor(uid, false);
-            ctx.reply("Снят с роли ответственного.", "HTML", null, null);
-            AdminFlowService.showSupervisorsScreen(ctx, sessionManager, userService);
-        } catch (NumberFormatException e) {
-            ctx.reply("<b>❌ ОШИБКА</b>\n\nВведите номер для снятия или нажмите кнопку.", "HTML", null, Keyboards.back());
-        }
+        Long uid = parseSelectedId(ctx, session, "supervisor_ids", "Введите номер для снятия или нажмите кнопку.", Keyboards.back());
+        if (uid == null) return;
+        userService.setSupervisor(uid, false);
+        ctx.reply("Снят с роли ответственного.", "HTML", null, null);
+        AdminFlowService.showSupervisorsScreen(ctx, sessionManager, userService);
     }
 
     @StateAction(FsmStates.ADMIN_ADDING_SUPERVISOR)
@@ -219,21 +216,11 @@ public class AdminFlowHandler {
             AdminFlowService.showSupervisorsScreen(ctx, sessionManager, userService);
             return;
         }
-        try {
-            int num = Integer.parseInt(ctx.getText().trim());
-            @SuppressWarnings("unchecked")
-            List<Long> ids = (List<Long>) session.getData("candidate_ids", List.class);
-            if (ids == null || ids.isEmpty() || num < 1 || num > ids.size()) {
-                ctx.reply("<b>❌ ОШИБКА</b>\n\n" + BotMessages.MSG_BAD_NUMBER, "HTML", null, Keyboards.back());
-                return;
-            }
-            Long uid = ids.get(num - 1);
-            userService.setSupervisor(uid, true);
-            ctx.reply("Назначен ответственным.", "HTML", null, null);
-            AdminFlowService.showSupervisorsScreen(ctx, sessionManager, userService);
-        } catch (NumberFormatException e) {
-            ctx.reply("<b>❌ ОШИБКА</b>\n\nВведите номер для назначения ответственным.", "HTML", null, Keyboards.back());
-        }
+        Long uid = parseSelectedId(ctx, session, "candidate_ids", "Введите номер для назначения ответственным.", Keyboards.back());
+        if (uid == null) return;
+        userService.setSupervisor(uid, true);
+        ctx.reply("Назначен ответственным.", "HTML", null, null);
+        AdminFlowService.showSupervisorsScreen(ctx, sessionManager, userService);
     }
 
     @StateAction(FsmStates.ADMIN_DEPT_MENU)
@@ -270,29 +257,19 @@ public class AdminFlowHandler {
             backToDepartmentInfo(ctx, session);
             return;
         }
-        try {
-            int num = Integer.parseInt(ctx.getText().trim());
-            @SuppressWarnings("unchecked")
-            List<Long> ids = (List<Long>) session.getData("employees_list", List.class);
-            if (ids == null || ids.isEmpty() || num < 1 || num > ids.size()) {
-                ctx.reply("<b>❌ ОШИБКА</b>\n\n" + BotMessages.MSG_BAD_NUMBER, "HTML", null, Keyboards.back());
-                return;
-            }
-            Long userId = ids.get(num - 1);
-            User user = userService.getUserWithDepartment(userId).orElse(null);
-            if (user == null) {
-                ctx.reply("<b>❌ ОШИБКА</b>\n\nПользователь не найден.", "HTML", null, Keyboards.back());
-                return;
-            }
-            Integer currentDeptId = session.getData("current_dept_id", Integer.class);
-            if (user.getDepartment() == null || !user.getDepartment().getId().equals(currentDeptId)) {
-                ctx.reply("<b>❌ ОШИБКА</b>\n\nПользователь не принадлежит этому отделу.", "HTML", null, Keyboards.back());
-                return;
-            }
-            AdminFlowService.showUserEditor(ctx, user, session, sessionManager);
-        } catch (NumberFormatException e) {
-            ctx.reply("<b>❌ ОШИБКА</b>\n\n" + BotMessages.MSG_ENTER_USER_NUMBER, "HTML", null, Keyboards.back());
+        Long userId = parseSelectedId(ctx, session, "employees_list", BotMessages.MSG_ENTER_USER_NUMBER, Keyboards.back());
+        if (userId == null) return;
+        User user = userService.getUserWithDepartment(userId).orElse(null);
+        if (user == null) {
+            ctx.reply(BotMessages.err("Пользователь не найден."), "HTML", null, Keyboards.back());
+            return;
         }
+        Integer currentDeptId = session.getData("current_dept_id", Integer.class);
+        if (user.getDepartment() == null || !user.getDepartment().getId().equals(currentDeptId)) {
+            ctx.reply(BotMessages.err("Пользователь не принадлежит этому отделу."), "HTML", null, Keyboards.back());
+            return;
+        }
+        AdminFlowService.showUserEditor(ctx, user, session, sessionManager);
     }
 
     @StateAction(FsmStates.ADMIN_CONFIRM_DELETE_DEPT)
@@ -307,7 +284,7 @@ public class AdminFlowHandler {
             goToAdminHome(ctx);
             ctx.reply("Отдел удален.", "HTML", null, Keyboards.adminHome());
         } else {
-            ctx.reply("<b>❌ ОШИБКА</b>\n\n" + BotMessages.MSG_CONFIRM_YES_BACK, "HTML", null, Keyboards.confirmYesBack());
+            ctx.reply(BotMessages.err(BotMessages.MSG_CONFIRM_YES_BACK), "HTML", null, Keyboards.confirmYesBack());
         }
     }
 
@@ -326,7 +303,7 @@ public class AdminFlowHandler {
             List<Long> ids = employees.stream().map(User::getUserId).toList();
             AdminFlowService.showDepartmentInfo(ctx, deptId, newName, ids, sessionManager, userService);
         } else {
-            ctx.reply("<b>❌ ОШИБКА</b>\n\nОтдел с таким названием уже существует.", "HTML", null, Keyboards.back());
+            ctx.reply(BotMessages.err("Отдел с таким названием уже существует."), "HTML", null, Keyboards.back());
         }
     }
 }
