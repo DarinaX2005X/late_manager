@@ -42,7 +42,7 @@ public class AdminFlowService {
         }
         sb.append("\nВведите номер заявки.");
         ctx.reply(sb.toString(), "HTML", null, Keyboards.back());
-        sessionManager.updateState(ctx.getUserId(), FsmStates.ADMIN_SELECTING_USER);
+        ensureSession(sessionManager, ctx.getUserId(), ctx.getChatId(), FsmStates.ADMIN_SELECTING_USER);
     }
 
     public static void showDeptsList(CommandContext ctx, SessionManager sessionManager, UserService userService) {
