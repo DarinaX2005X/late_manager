@@ -48,7 +48,7 @@ public class AdminUserEditHandler {
             }
             session.putData("awaiting_new_name", false);
         } else if ("Оставить".equals(text)) {
-            return;
+            // просто идем дальше
         } else if ("Изменить".equals(text)) {
             ctx.reply(BotMessages.MSG_ENTER_NEW_NAME, "HTML", null, Keyboards.back());
             session.putData("awaiting_new_name", true);
