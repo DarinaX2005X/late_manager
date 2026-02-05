@@ -147,7 +147,7 @@ public class AdminFlowService {
     }
 
     static void showDepartmentInfo(CommandContext ctx, int deptId, String deptName, List<Long> employeeIds, SessionManager sessionManager, UserService userService) {
-        StringBuilder sb = new StringBuilder("<b>🏢 ОТДЕЛ: ").append(deptName.toUpperCase()).append("</b>\n\n<b>👥 Сотрудники:</b>\n");
+        StringBuilder sb = new StringBuilder("<b>🏢 ").append(deptName.toUpperCase()).append("</b>\n\n<b>👥 Сотрудники:</b>\n");
         List<Long> orderedIds = new ArrayList<>();
         if (!employeeIds.isEmpty()) {
             List<User> employees = userService.getEmployeesInDepartment(deptId);
