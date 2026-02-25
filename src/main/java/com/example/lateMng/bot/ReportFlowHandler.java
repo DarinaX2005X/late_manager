@@ -1,7 +1,6 @@
 package com.example.lateMng.bot;
 
 import com.example.lateMng.entity.User;
-import com.example.lateMng.bot.BotMessages;
 import com.example.lateMng.service.UserService;
 import com.kaleert.nyagram.command.CommandContext;
 import com.kaleert.nyagram.fsm.SessionManager;
@@ -133,7 +132,8 @@ public class ReportFlowHandler {
         String reason = session.getData("reason", String.class);
         String timeVal = session.getData("time_val", String.class);
         String reportText = buildReportText(dbUser, reportType, reason, timeVal);
-        int sentCount = botNotificationService.sendToReportRecipients(userId, dbUser.getDepartment().getId(), reportText);
+        int sentCount = botNotificationService.sendToReportRecipients(userId, dbUser.getDepartment().getId(),
+                reportText);
 
         String confirmText = sentCount > 0
                 ? "<b>✅ ОТЧЕТ ОТПРАВЛЕН</b>\n\nНачальство уведомлено\nПолучателей: <b>" + sentCount + "</b>"

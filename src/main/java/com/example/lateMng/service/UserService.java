@@ -79,7 +79,8 @@ public class UserService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean createDepartment(String name) {
-        if (departmentRepository.existsByName(name)) return false;
+        if (departmentRepository.existsByName(name))
+            return false;
         departmentRepository.save(Department.builder().name(name).build());
         return true;
     }
@@ -90,17 +91,19 @@ public class UserService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean renameDepartment(Integer deptId, String newName) {
-        if (departmentRepository.existsByName(newName)) return false;
-        departmentRepository.findById(deptId).ifPresent(d -> {
+        if (departmentRepository.existsByName(newName))
+            return false;
+        return departmentRepository.findById(deptId).map(d -> {
             d.setName(newName);
             departmentRepository.save(d);
-        });
-        return true;
+            return true;
+        }).orElse(false);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void deleteDepartment(Integer deptId) {
-        for (User u : userRepository.findByStatusAndDepartment_IdOrderByFullNameAsc("active", deptId)) {
+        List<User> allInDept = userRepository.findAllByDepartmentId(deptId);
+        for (User u : allInDept) {
             u.setDepartment(null);
             userRepository.save(u);
         }
@@ -157,7 +160,8 @@ public class UserService {
     }
 
     public List<User> getSupervisors(boolean excludeOnVacation) {
-        return excludeOnVacation ? userRepository.findSupervisorsExcludingOnVacation() : userRepository.findSupervisors();
+        return excludeOnVacation ? userRepository.findSupervisorsExcludingOnVacation()
+                : userRepository.findSupervisors();
     }
 
     public Set<Long> getReportRecipientIds(Long excludeUserId, Integer departmentId) {

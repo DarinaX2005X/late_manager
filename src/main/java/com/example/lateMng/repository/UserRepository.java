@@ -10,27 +10,30 @@ import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    @Query(value = "SELECT * FROM users WHERE status = :status ORDER BY full_name ASC", nativeQuery = true)
+    @Query("SELECT u FROM User u WHERE u.status = :status ORDER BY u.fullName ASC")
     List<User> findByStatusOrderByFullNameAsc(@Param("status") String status);
 
-    @Query(value = "SELECT * FROM users WHERE status = :status AND department_id IS NULL ORDER BY full_name ASC", nativeQuery = true)
+    @Query("SELECT u FROM User u WHERE u.status = :status AND u.department IS NULL ORDER BY u.fullName ASC")
     List<User> findByStatusAndDepartmentIsNullOrderByFullNameAsc(@Param("status") String status);
 
-    @Query(value = "SELECT * FROM users WHERE status = :status AND department_id = :departmentId ORDER BY full_name ASC", nativeQuery = true)
-    List<User> findByStatusAndDepartment_IdOrderByFullNameAsc(@Param("status") String status, @Param("departmentId") Integer departmentId);
+    @Query("SELECT u FROM User u WHERE u.status = :status AND u.department.id = :departmentId ORDER BY u.fullName ASC")
+    List<User> findByStatusAndDepartment_IdOrderByFullNameAsc(@Param("status") String status,
+            @Param("departmentId") Integer departmentId);
 
-    @Query(value = "SELECT * FROM users WHERE role = 'manager' AND department_id = :deptId AND is_on_vacation = FALSE AND status = 'active'", nativeQuery = true)
+    @Query("SELECT u FROM User u WHERE u.role = 'manager' AND u.department.id = :deptId AND u.isOnVacation = FALSE AND u.status = 'active'")
     List<User> findManagersByDepartment(@Param("deptId") Integer deptId);
 
-    @Query(value = "SELECT * FROM users WHERE is_supervisor = TRUE AND status = 'active'", nativeQuery = true)
+    @Query("SELECT u FROM User u WHERE u.isSupervisor = TRUE AND u.status = 'active'")
     List<User> findSupervisors();
 
-    @Query(value = "SELECT * FROM users WHERE is_supervisor = TRUE AND status = 'active' AND is_on_vacation = FALSE", nativeQuery = true)
+    @Query("SELECT u FROM User u WHERE u.isSupervisor = TRUE AND u.status = 'active' AND u.isOnVacation = FALSE")
     List<User> findSupervisorsExcludingOnVacation();
 
-    @Query(value = "SELECT * FROM users WHERE is_admin = TRUE AND status = 'active'", nativeQuery = true)
+    @Query("SELECT u FROM User u WHERE u.isAdmin = TRUE AND u.status = 'active'")
     List<User> findAdmins();
 
-    @Query(value = "SELECT * FROM users WHERE user_id = :userId", nativeQuery = true)
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.department WHERE u.userId = :userId")
     Optional<User> findByIdWithDepartment(@Param("userId") Long userId);
+
+    List<User> findAllByDepartmentId(Integer departmentId);
 }
