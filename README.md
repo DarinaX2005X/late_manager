@@ -8,7 +8,7 @@
 3. Ввести username (например: `late_mng_bot`)
 4. Скопировать токен
 
-![BotFather](botfather.jpg)
+<img src="botfather.jpg" width="300">
 
 ## 2. Подготовить файлы
 
