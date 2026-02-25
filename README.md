@@ -1,21 +1,36 @@
 # Инструкция
 
-Скачать надо будет только эти 2 файла и положить в одну папку:
+## 1. Создать бота
+
+Открыть [@BotFather](https://t.me/BotFather) в телеграме:
+1. `/newbot`
+2. Ввести имя бота (например: `Учет опозданий`)
+3. Ввести username (например: `late_mng_bot`)
+4. Скопировать токен
+
+![BotFather](botfather.jpg)
+
+## 2. Подготовить файлы
+
+Скачать и положить в одну папку:
 - `docker-compose.yml`
 - `db_init.sql`
 
-Там же создать файл `.env` с переменными:
+Там же создать файл `.env`:
 ```
-BOT_TOKEN
-BOT_USERNAME
-SPRING_DATASOURCE_URL
-SPRING_DATASOURCE_USERNAME
-SPRING_DATASOURCE_PASSWORD
-DB_NAME
+BOT_TOKEN=7123456789:AAHxxxxxxxxxxxxxxxxxxxxxxxxxx
+BOT_USERNAME=late_mng_bot
+DB_NAME=late_mng
+SPRING_DATASOURCE_USERNAME=postgres
+SPRING_DATASOURCE_PASSWORD=your_password_here
 ```
 
-Запуск: `sudo docker-compose up -d`
+## 3. Запуск
 
-Образ бота - darinax/late-manager-java
+```
+sudo docker-compose up -d
+```
 
-Документация nyagram - https://nyagram.kaleert.pro/
+Образ бота — `darinax/late-manager-java`
+
+Документация nyagram — https://nyagram.kaleert.pro/
