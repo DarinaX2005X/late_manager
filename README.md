@@ -16,10 +16,13 @@
 - `docker-compose.yml`
 - `db_init.sql`
 
-Там же создать файл `.env`:
+Там же создать файл `.env` (см. `.env.example`):
 ```
+# Nyagram
 BOT_TOKEN=7123456789:AAHxxxxxxxxxxxxxxxxxxxxxxxxxx
-BOT_USERNAME=late_mng_bot
+BOT_USERNAME=@late_mng_bot
+
+# Postgres
 DB_NAME=late_mng
 SPRING_DATASOURCE_USERNAME=postgres
 SPRING_DATASOURCE_PASSWORD=your_password_here
