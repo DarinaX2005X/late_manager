@@ -20,8 +20,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByStatusAndDepartment_IdOrderByFullNameAsc(@Param("status") String status,
             @Param("departmentId") Integer departmentId);
 
-    @Query("SELECT u FROM User u WHERE u.role = 'manager' AND u.department.id = :deptId AND u.isOnVacation = FALSE AND u.status = 'active'")
+    @Query("SELECT u FROM User u WHERE u.role = 'manager' AND u.department.id = :deptId AND u.status = 'active'")
     List<User> findManagersByDepartment(@Param("deptId") Integer deptId);
+
+    @Query("SELECT u FROM User u WHERE u.role = 'manager' AND u.department.id = :deptId AND u.isOnVacation = FALSE AND u.status = 'active'")
+    List<User> findActiveManagersByDepartment(@Param("deptId") Integer deptId);
 
     @Query("SELECT u FROM User u WHERE u.isSupervisor = TRUE AND u.status = 'active'")
     List<User> findSupervisors();

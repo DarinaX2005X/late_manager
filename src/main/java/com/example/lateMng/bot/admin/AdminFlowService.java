@@ -52,7 +52,15 @@ public class AdminFlowService {
             sb.append("Отделов пока нет.\n");
         } else {
             for (int i = 0; i < depts.size(); i++) {
-                sb.append(i + 1).append(". ").append(depts.get(i).getName()).append("\n");
+                Department d = depts.get(i);
+                sb.append(i + 1).append(". ").append(d.getName());
+
+                List<User> deptManagers = userService.getManagersForDepartment(d.getId());
+                if (!deptManagers.isEmpty()) {
+                    sb.append(" (Руководитель: ").append(formatUserLine(deptManagers.get(0))).append(")");
+                }
+
+                sb.append("\n");
             }
             sb.append("\n").append(BotMessages.MSG_ENTER_DEPT_NUMBER);
         }

@@ -73,6 +73,10 @@ public class UserService {
         return userRepository.findManagersByDepartment(departmentId);
     }
 
+    public List<User> getActiveManagersForDepartment(Integer departmentId) {
+        return userRepository.findActiveManagersByDepartment(departmentId);
+    }
+
     public Optional<Department> getDepartment(Integer id) {
         return departmentRepository.findById(id);
     }
@@ -167,7 +171,7 @@ public class UserService {
     public Set<Long> getReportRecipientIds(Long excludeUserId, Integer departmentId) {
         Set<Long> ids = new HashSet<>();
         if (departmentId != null) {
-            for (User m : getManagersForDepartment(departmentId)) {
+            for (User m : getActiveManagersForDepartment(departmentId)) {
                 ids.add(m.getUserId());
             }
         }
