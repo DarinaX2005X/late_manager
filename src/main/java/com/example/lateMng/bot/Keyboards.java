@@ -19,6 +19,7 @@ public final class Keyboards {
         if (isAdmin) {
             rows.add(List.of(KeyboardButton.text("Админ панель")));
         }
+        rows.add(List.of(KeyboardButton.text("Информация")));
         return ReplyKeyboardMarkup.builder()
                 .keyboard(rows)
                 .resizeKeyboard(true)

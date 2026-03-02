@@ -20,11 +20,14 @@ public class AdminFlowService {
     private static final String ROLE_EMPLOYEE = "Сотрудник";
     private static final String ROLE_MANAGER = "Начальник";
 
-    private AdminFlowService() {}
+    private AdminFlowService() {
+    }
 
     private static void ensureSession(SessionManager sm, Long uid, Long chatId, String state) {
-        if (sm.getSession(uid) == null) sm.startSession(uid, chatId, state);
-        else sm.updateState(uid, state);
+        if (sm.getSession(uid) == null)
+            sm.startSession(uid, chatId, state);
+        else
+            sm.updateState(uid, state);
     }
 
     public static void showPendingUsers(CommandContext ctx, SessionManager sessionManager, UserService userService) {
@@ -36,7 +39,8 @@ public class AdminFlowService {
             ctx.reply("<b>📋 НОВЫЕ ЗАЯВКИ</b>\n\nНет новых заявок.", "HTML", null, Keyboards.adminHome());
             return;
         }
-        StringBuilder sb = new StringBuilder("<b>📋 НОВЫЕ ЗАЯВКИ</b>\n\nВсего заявок: <b>").append(users.size()).append("</b>\n\n");
+        StringBuilder sb = new StringBuilder("<b>📋 НОВЫЕ ЗАЯВКИ</b>\n\nВсего заявок: <b>").append(users.size())
+                .append("</b>\n\n");
         for (int i = 0; i < users.size(); i++) {
             sb.append(i + 1).append(". ").append(formatUserLine(users.get(i))).append("\n");
         }
@@ -57,7 +61,7 @@ public class AdminFlowService {
 
                 List<User> deptManagers = userService.getManagersForDepartment(d.getId());
                 if (!deptManagers.isEmpty()) {
-                    sb.append(" (Руководитель: ").append(formatUserLine(deptManagers.get(0))).append(")");
+                    sb.append(" (Руководитель: ").append(formatUserLine(deptManagers.getFirst())).append(")");
                 }
 
                 sb.append("\n");
@@ -70,7 +74,8 @@ public class AdminFlowService {
 
     public static void showNoDeptUsersList(CommandContext ctx, SessionManager sessionManager, UserService userService) {
         List<User> users = userService.getUsersWithoutDepartment();
-        StringBuilder sb = new StringBuilder("<b>👥 ПОЛЬЗОВАТЕЛИ БЕЗ ОТДЕЛА</b>\n\nВведите номер пользователя для редактирования:\n\n");
+        StringBuilder sb = new StringBuilder(
+                "<b>👥 ПОЛЬЗОВАТЕЛИ БЕЗ ОТДЕЛА</b>\n\nВведите номер пользователя для редактирования:\n\n");
         List<Long> ids = new ArrayList<>();
         if (!users.isEmpty()) {
             appendManagersAndRegular(sb, users, ids);
@@ -90,8 +95,10 @@ public class AdminFlowService {
         List<User> managers = new ArrayList<>();
         List<User> regular = new ArrayList<>();
         for (User u : employees) {
-            if ("manager".equals(u.getRole())) managers.add(u);
-            else regular.add(u);
+            if ("manager".equals(u.getRole()))
+                managers.add(u);
+            else
+                regular.add(u);
         }
         int c = 1;
         for (User u : managers) {
@@ -104,7 +111,8 @@ public class AdminFlowService {
         }
     }
 
-    public static void showSupervisorsScreen(CommandContext ctx, SessionManager sessionManager, UserService userService) {
+    public static void showSupervisorsScreen(CommandContext ctx, SessionManager sessionManager,
+            UserService userService) {
         List<User> supervisors = userService.getSupervisors(false);
         List<Long> ids = supervisors.stream().map(User::getUserId).toList();
         StringBuilder sb = new StringBuilder("<b>👥 ОТВЕТСТВЕННЫЕ</b>\n\n");
@@ -132,7 +140,8 @@ public class AdminFlowService {
     }
 
     static String formatUserDeptName(User user) {
-        if (user.getDepartment() == null) return "Не привязан";
+        if (user.getDepartment() == null)
+            return "Не привязан";
         return user.getDepartment().getName();
     }
 
@@ -144,18 +153,20 @@ public class AdminFlowService {
         String adminStatus = Boolean.TRUE.equals(user.getIsAdmin()) ? "Да" : "Нет";
         boolean hasDept = user.getDepartment() != null;
         ctx.reply("<b>✏️ РЕДАКТИРОВАНИЕ ПОЛЬЗОВАТЕЛЯ</b>\n\n"
-                        + "<b>ID:</b> " + user.getUserId() + "\n"
-                        + "<b>Имя:</b> " + formatUserLine(user) + "\n"
-                        + "<b>Роль:</b> " + role + "\n"
-                        + "<b>Админ:</b> " + adminStatus + "\n"
-                        + "<b>Отдел:</b> " + deptName + "\n\n"
-                        + "Что изменить?",
+                + "<b>ID:</b> " + user.getUserId() + "\n"
+                + "<b>Имя:</b> " + formatUserLine(user) + "\n"
+                + "<b>Роль:</b> " + role + "\n"
+                + "<b>Админ:</b> " + adminStatus + "\n"
+                + "<b>Отдел:</b> " + deptName + "\n\n"
+                + "Что изменить?",
                 "HTML", null, Keyboards.userEditKeyboard(Boolean.TRUE.equals(user.getIsAdmin()), hasDept));
         sessionManager.updateState(ctx.getUserId(), FsmStates.ADMIN_MANAGING_USERS);
     }
 
-    static void showDepartmentInfo(CommandContext ctx, int deptId, String deptName, List<Long> employeeIds, SessionManager sessionManager, UserService userService) {
-        StringBuilder sb = new StringBuilder("<b>🏢 ").append(deptName.toUpperCase()).append("</b>\n\n<b>👥 Сотрудники:</b>\n");
+    static void showDepartmentInfo(CommandContext ctx, int deptId, String deptName, List<Long> employeeIds,
+            SessionManager sessionManager, UserService userService) {
+        StringBuilder sb = new StringBuilder("<b>🏢 ").append(deptName.toUpperCase())
+                .append("</b>\n\n<b>👥 Сотрудники:</b>\n");
         List<Long> orderedIds = new ArrayList<>();
         if (!employeeIds.isEmpty()) {
             List<User> employees = userService.getEmployeesInDepartment(deptId);
@@ -169,13 +180,15 @@ public class AdminFlowService {
         ctx.reply(sb.toString(), "HTML", null, Keyboards.departmentMenu());
     }
 
-    public static void showEmployeeListForDept(CommandContext ctx, int deptId, UserSession session, SessionManager sessionManager, UserService userService) {
+    public static void showEmployeeListForDept(CommandContext ctx, int deptId, UserSession session,
+            SessionManager sessionManager, UserService userService) {
         List<User> employees = userService.getEmployeesInDepartment(deptId);
         if (employees.isEmpty()) {
             ctx.reply("В отделе нет сотрудников.", "HTML", null, Keyboards.departmentMenu());
             return;
         }
-        StringBuilder sb = new StringBuilder("<b>👥 УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ</b>\n\nВведите номер пользователя для редактирования:\n\n");
+        StringBuilder sb = new StringBuilder(
+                "<b>👥 УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ</b>\n\nВведите номер пользователя для редактирования:\n\n");
         List<Long> orderedIds = new ArrayList<>();
         appendManagersAndRegular(sb, employees, orderedIds);
         session.putData("employees_list", orderedIds);
