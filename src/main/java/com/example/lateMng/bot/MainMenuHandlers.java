@@ -97,7 +97,8 @@ public class MainMenuHandlers {
 
         StringBuilder sb = new StringBuilder();
         sb.append("<b>ℹ️ ИНФОРМАЦИЯ</b>\n\n");
-        sb.append("👤 <b>ФИО:</b> ").append(user.getFullName()).append("\n");
+        sb.append("👤 <b>ФИО:</b> ").append(user.getFullName())
+                .append(BotMessages.usernameTag(user.getUsername())).append("\n");
         sb.append("🏢 <b>Отдел:</b> ")
                 .append(user.getDepartment() != null ? user.getDepartment().getName() : "Без отдела").append("\n");
 
@@ -106,72 +107,56 @@ public class MainMenuHandlers {
         boolean hasRecipients = false;
         if (user.getDepartment() != null) {
             List<User> managers = userService.getActiveManagersForDepartment(user.getDepartment().getId());
-            boolean mgrHdr = false;
             for (User m : managers) {
                 if (!m.getUserId().equals(uid)) {
-                    if (!mgrHdr) {
-                        sb.append("<i>Начальники отдела:</i>\n");
-                        mgrHdr = true;
-                    }
-                    sb.append("- ").append(m.getFullName()).append("\n");
+                    sb.append("- ").append(m.getFullName())
+                            .append(BotMessages.usernameTag(m.getUsername())).append("\n");
                     hasRecipients = true;
                 }
             }
         }
 
         List<User> supervisors = userService.getSupervisors(true);
-        boolean supHdr = false;
         for (User s : supervisors) {
             if (!s.getUserId().equals(uid)) {
-                if (!supHdr) {
-                    sb.append("<i>Ответственные:</i>\n");
-                    supHdr = true;
-                }
-                sb.append("- ").append(s.getFullName()).append("\n");
+                sb.append("- ").append(s.getFullName())
+                        .append(BotMessages.usernameTag(s.getUsername())).append("\n");
                 hasRecipients = true;
             }
         }
 
         if (!hasRecipients) {
-            sb.append("\n<i>Никто не получает ваши уведомления.</i>\n");
+            sb.append("<i>Никто не получает ваши уведомления.</i>\n");
         }
 
-        if (canMark) {
-            sb.append("\n<b>📥 Вы получаете отчёты:</b>\n");
-            if (isManager && user.getDepartment() != null) {
-                sb.append("<i>Сотрудники отдела «").append(user.getDepartment().getName()).append("»</i>\n");
-            }
-            if (isSupervisor) {
-                sb.append("<i>Все сотрудники (ответственный)</i>\n");
-            }
+        if (canMark && user.getDepartment() != null) {
+            List<User> members = userService.getEmployeesInDepartment(user.getDepartment().getId());
+            List<Report> todayReports = userService.getTodayReportsByDepartment(user.getDepartment().getId());
+            Map<Long, Report> reportByUser = todayReports.stream()
+                    .collect(Collectors.toMap(Report::getUserId, r -> r, (a, b) -> a));
 
-            // Статус отдела сегодня
-            if (user.getDepartment() != null) {
-                List<User> members = userService.getEmployeesInDepartment(user.getDepartment().getId());
-                List<Report> todayReports = userService.getTodayReportsByDepartment(user.getDepartment().getId());
-                Map<Long, Report> reportByUser = todayReports.stream()
-                        .collect(Collectors.toMap(Report::getUserId, r -> r, (a, b) -> a));
-
-                sb.append("\n<b>📋 Статус отдела сегодня:</b>\n");
-                sb.append("<i>(нет отметки = пришёл вовремя)</i>\n");
-                for (User m : members) {
-                    if (m.getUserId().equals(uid))
-                        continue;
+            sb.append("\n<b>📋 Сотрудники отдела сегодня:</b>\n");
+            for (User m : members) {
+                if (m.getUserId().equals(uid))
+                    continue;
+                String name = m.getFullName() + BotMessages.usernameTag(m.getUsername());
+                String status;
+                if (Boolean.TRUE.equals(m.getIsOnVacation())) {
+                    status = "в отпуске";
+                } else {
                     Report r = reportByUser.get(m.getUserId());
-                    String icon;
-                    String detail = "";
-                    if (Boolean.TRUE.equals(m.getIsOnVacation())) {
-                        icon = "🏖";
-                    } else if (r == null) {
-                        icon = "✅";
+                    if (r == null) {
+                        status = "";
                     } else if ("late".equals(r.getReportType())) {
-                        icon = "⏰";
-                        detail = r.getTimeVal() != null ? " (" + r.getTimeVal() + ")" : "";
+                        status = "опоздал";
                     } else {
-                        icon = "🚫";
+                        status = "не пришёл";
                     }
-                    sb.append(icon).append(" ").append(m.getFullName()).append(detail).append("\n");
                 }
+                sb.append(name);
+                if (!status.isEmpty())
+                    sb.append(" - ").append(status);
+                sb.append("\n");
             }
         }
 

@@ -267,6 +267,33 @@ public class StatsAndManualReportHandler {
                     .append(creator).append('\n');
         }
 
+        // Определяем является ли отчетом по всем отделам
+        long distinctDepts = reports.stream()
+                .map(r -> r.getDepartmentName() != null ? r.getDepartmentName() : "")
+                .distinct().count();
+        boolean multiDept = distinctDepts > 1;
+
+        if (multiDept) {
+            // Группируем по отделу и добавляем сводки, затем общую сводку
+            java.util.Map<String, List<Report>> byDept = new java.util.LinkedHashMap<>();
+            for (Report r : reports) {
+                String dept = r.getDepartmentName() != null ? r.getDepartmentName() : "Без отдела";
+                byDept.computeIfAbsent(dept, k -> new ArrayList<>()).add(r);
+            }
+            for (java.util.Map.Entry<String, List<Report>> entry : byDept.entrySet()) {
+                csv.append('\n');
+                csv.append("Сводка по отделу: ").append(entry.getKey()).append('\n');
+                appendSummaryTable(csv, entry.getValue());
+            }
+            csv.append('\n');
+            csv.append("Общая сводка\n");
+            appendSummaryTable(csv, reports);
+        } else {
+            csv.append('\n');
+            csv.append("Сводка\n");
+            appendSummaryTable(csv, reports);
+        }
+
         String fileName = "report_" + from.format(FILE_DATE_FMT) + "_" + to.minusDays(1).format(FILE_DATE_FMT) + ".csv";
 
         try {
@@ -283,6 +310,35 @@ public class StatsAndManualReportHandler {
             log.error("Ошибка экспорта CSV: {}", e.getMessage(), e);
             ctx.reply(BotMessages.err("Ошибка при создании файла экспорта."), "HTML", null, statsPeriodKeyboard());
         }
+    }
+
+    private void appendSummaryTable(StringBuilder csv, List<Report> reports) {
+        csv.append("Сотрудник;Отдел;Опоздания;Отсутствия\n");
+
+        java.util.Map<Long, long[]> counts = new java.util.LinkedHashMap<>();
+        java.util.Map<Long, String> names = new java.util.LinkedHashMap<>();
+        java.util.Map<Long, String> depts = new java.util.LinkedHashMap<>();
+
+        for (Report r : reports) {
+            long[] arr = counts.computeIfAbsent(r.getUserId(), k -> new long[2]);
+            names.put(r.getUserId(), r.getUserFullName() != null ? r.getUserFullName() : "");
+            depts.put(r.getUserId(), r.getDepartmentName() != null ? r.getDepartmentName() : "");
+            if ("late".equals(r.getReportType()))
+                arr[0]++;
+            else
+                arr[1]++;
+        }
+
+        counts.entrySet().stream()
+                .sorted(java.util.Comparator.<java.util.Map.Entry<Long, long[]>>comparingLong(e -> -(e.getValue()[1]))
+                        .thenComparingLong(e -> -(e.getValue()[0])))
+                .forEach(entry -> {
+                    Long uid = entry.getKey();
+                    csv.append(names.get(uid)).append(';')
+                            .append(depts.get(uid)).append(';')
+                            .append(entry.getValue()[0]).append(';')
+                            .append(entry.getValue()[1]).append('\n');
+                });
     }
 
     // Ручная отметка

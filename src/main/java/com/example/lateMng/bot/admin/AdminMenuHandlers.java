@@ -26,7 +26,7 @@ public class AdminMenuHandlers {
     public void onBack(CommandContext ctx) {
         Long uid = ctx.getUserId();
         UserSession session = sessionManager.getSession(uid);
-        if (session != null && FsmStates.ADMIN_HOME.equals(session.getState())) {
+        if (session == null || FsmStates.ADMIN_HOME.equals(session.getState())) {
             goMainMenu(ctx);
         }
     }
