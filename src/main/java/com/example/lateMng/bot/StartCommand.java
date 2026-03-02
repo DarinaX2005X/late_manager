@@ -29,8 +29,7 @@ public class StartCommand {
 
         if (opt.isEmpty()) {
             ctx.reply(
-                    "<b>📝 РЕГИСТРАЦИЯ</b>\n\nВведите ваше реальное имя\n(Фамилия Имя):"
-            );
+                    "<b>📝 РЕГИСТРАЦИЯ</b>\n\nВведите ваше реальное имя\n(Фамилия Имя):");
             sessionManager.startSession(userId, ctx.getChatId(), FsmStates.REGISTRATION_NAME);
             return;
         }
@@ -45,18 +44,19 @@ public class StartCommand {
             return;
         }
 
-        String firstName = firstName(user);
+        User fullUser = userService.getUserWithDepartment(userId).orElse(user);
+        String firstName = firstName(fullUser);
         ctx.reply(
                 "<b>👋 Добро пожаловать, " + firstName + "!</b>",
                 "HTML",
                 null,
-                Keyboards.mainMenu(user.getIsOnVacation(), Boolean.TRUE.equals(user.getIsAdmin()))
-        );
+                Keyboards.mainMenuFor(fullUser));
     }
 
     private static String firstName(User user) {
         String full = user.getFullName();
-        if (full == null || full.isBlank()) return "Пользователь";
+        if (full == null || full.isBlank())
+            return "Пользователь";
         String[] parts = full.trim().split("\\s+", 2);
         return parts.length > 1 ? parts[1] : parts[0];
     }

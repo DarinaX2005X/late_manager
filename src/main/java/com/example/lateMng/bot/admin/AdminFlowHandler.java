@@ -43,7 +43,8 @@ public class AdminFlowHandler {
         }
     }
 
-    private Long parseSelectedId(CommandContext ctx, UserSession session, String listKey, String parseErrorMsg, ReplyKeyboardMarkup keyboard) {
+    private Long parseSelectedId(CommandContext ctx, UserSession session, String listKey, String parseErrorMsg,
+            ReplyKeyboardMarkup keyboard) {
         try {
             int num = Integer.parseInt(ctx.getText().trim());
             @SuppressWarnings("unchecked")
@@ -64,9 +65,9 @@ public class AdminFlowHandler {
         String text = ctx.getText();
         if ("Назад".equals(text)) {
             sessionManager.clearSession(ctx.getUserId());
-            userService.getUser(ctx.getUserId()).ifPresent(user ->
-                    ctx.reply("<b>🏠 ГЛАВНОЕ МЕНЮ</b>", "HTML", null,
-                            Keyboards.mainMenu(user.getIsOnVacation(), Boolean.TRUE.equals(user.getIsAdmin()))));
+            userService.getUserWithDepartment(ctx.getUserId())
+                    .ifPresent(user -> ctx.reply("<b>🏠 ГЛАВНОЕ МЕНЮ</b>", "HTML", null,
+                            Keyboards.mainMenuFor(user)));
             return;
         }
         if ("Новые заявки".equals(text)) {
@@ -151,7 +152,9 @@ public class AdminFlowHandler {
             session.putData("target_user_id", user.getUserId());
             session.putData("target_user_name", user.getFullName());
             session.putData("awaiting_new_name", false);
-            ctx.reply("<b>✏️ ПРОВЕРКА ИМЕНИ</b>\n\n<b>Текущее имя:</b> " + user.getFullName() + "\n\nОставить это имя или изменить?",
+            ctx.reply(
+                    "<b>✏️ ПРОВЕРКА ИМЕНИ</b>\n\n<b>Текущее имя:</b> " + user.getFullName()
+                            + "\n\nОставить это имя или изменить?",
                     "HTML", null, Keyboards.nameCheck());
             sessionManager.updateState(ctx.getUserId(), FsmStates.ADMIN_EDITING_USER_NAME);
         } catch (NumberFormatException e) {
@@ -165,8 +168,10 @@ public class AdminFlowHandler {
             goToAdminHome(ctx);
             return;
         }
-        Long userId = parseSelectedId(ctx, session, "employees_list", BotMessages.MSG_ENTER_USER_NUMBER, Keyboards.back());
-        if (userId == null) return;
+        Long userId = parseSelectedId(ctx, session, "employees_list", BotMessages.MSG_ENTER_USER_NUMBER,
+                Keyboards.back());
+        if (userId == null)
+            return;
         User user = userService.getUser(userId).orElse(null);
         if (user == null) {
             ctx.reply(BotMessages.err("Пользователь не найден."), "HTML", null, Keyboards.back());
@@ -203,8 +208,10 @@ public class AdminFlowHandler {
             sessionManager.updateState(ctx.getUserId(), FsmStates.ADMIN_ADDING_SUPERVISOR);
             return;
         }
-        Long uid = parseSelectedId(ctx, session, "supervisor_ids", "Введите номер для снятия или нажмите кнопку.", Keyboards.back());
-        if (uid == null) return;
+        Long uid = parseSelectedId(ctx, session, "supervisor_ids", "Введите номер для снятия или нажмите кнопку.",
+                Keyboards.back());
+        if (uid == null)
+            return;
         userService.setSupervisor(uid, false);
         ctx.reply("Снят с роли ответственного.", "HTML", null, null);
         AdminFlowService.showSupervisorsScreen(ctx, sessionManager, userService);
@@ -216,8 +223,10 @@ public class AdminFlowHandler {
             AdminFlowService.showSupervisorsScreen(ctx, sessionManager, userService);
             return;
         }
-        Long uid = parseSelectedId(ctx, session, "candidate_ids", "Введите номер для назначения ответственным.", Keyboards.back());
-        if (uid == null) return;
+        Long uid = parseSelectedId(ctx, session, "candidate_ids", "Введите номер для назначения ответственным.",
+                Keyboards.back());
+        if (uid == null)
+            return;
         userService.setSupervisor(uid, true);
         ctx.reply("Назначен ответственным.", "HTML", null, null);
         AdminFlowService.showSupervisorsScreen(ctx, sessionManager, userService);
@@ -246,7 +255,8 @@ public class AdminFlowHandler {
             return;
         }
         if ("Удалить отдел".equals(text)) {
-            ctx.reply("Удалить отдел? Все сотрудники будут отвязаны от отдела.", "HTML", null, Keyboards.confirmYesBack());
+            ctx.reply("Удалить отдел? Все сотрудники будут отвязаны от отдела.", "HTML", null,
+                    Keyboards.confirmYesBack());
             sessionManager.updateState(ctx.getUserId(), FsmStates.ADMIN_CONFIRM_DELETE_DEPT);
         }
     }
@@ -257,8 +267,10 @@ public class AdminFlowHandler {
             backToDepartmentInfo(ctx, session);
             return;
         }
-        Long userId = parseSelectedId(ctx, session, "employees_list", BotMessages.MSG_ENTER_USER_NUMBER, Keyboards.back());
-        if (userId == null) return;
+        Long userId = parseSelectedId(ctx, session, "employees_list", BotMessages.MSG_ENTER_USER_NUMBER,
+                Keyboards.back());
+        if (userId == null)
+            return;
         User user = userService.getUserWithDepartment(userId).orElse(null);
         if (user == null) {
             ctx.reply(BotMessages.err("Пользователь не найден."), "HTML", null, Keyboards.back());
@@ -280,7 +292,8 @@ public class AdminFlowHandler {
         }
         if ("Да".equals(ctx.getText())) {
             Integer deptId = session.getData("current_dept_id", Integer.class);
-            if (deptId != null) userService.deleteDepartment(deptId);
+            if (deptId != null)
+                userService.deleteDepartment(deptId);
             goToAdminHome(ctx);
             ctx.reply("Отдел удален.", "HTML", null, Keyboards.adminHome());
         } else {
@@ -295,7 +308,8 @@ public class AdminFlowHandler {
             return;
         }
         Integer deptId = session.getData("current_dept_id", Integer.class);
-        if (deptId == null) return;
+        if (deptId == null)
+            return;
         String newName = ctx.getText().trim();
         if (userService.renameDepartment(deptId, newName)) {
             session.putData("current_dept_name", newName);

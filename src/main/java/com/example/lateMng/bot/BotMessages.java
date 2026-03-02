@@ -2,7 +2,8 @@ package com.example.lateMng.bot;
 
 public final class BotMessages {
 
-    private BotMessages() {}
+    private BotMessages() {
+    }
 
     public static final String MSG_CONFIRM_YES_BACK = "Подтвердите действие. Напишите «Да» или «Назад».";
     public static final String MSG_BAD_NUMBER = "Неверный номер.";
@@ -14,5 +15,9 @@ public final class BotMessages {
 
     public static String err(String msg) {
         return "<b>❌ ОШИБКА</b>\n\n" + msg;
+    }
+
+    public static String usernameTag(String username) {
+        return username != null && !username.isBlank() ? " (@" + username + ")" : "";
     }
 }

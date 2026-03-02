@@ -27,9 +27,8 @@ public class VacationConfirmHandler {
         String text = ctx.getText();
         if ("Назад".equals(text)) {
             sessionManager.clearSession(ctx.getUserId());
-            userService.getUser(ctx.getUserId()).ifPresent(user ->
-                    ctx.reply("Отменено.", "HTML", null,
-                            Keyboards.mainMenu(user.getIsOnVacation(), Boolean.TRUE.equals(user.getIsAdmin()))));
+            userService.getUserWithDepartment(ctx.getUserId()).ifPresent(user -> ctx.reply("Отменено.", "HTML", null,
+                    Keyboards.mainMenuFor(user)));
             return;
         }
         if (!"Да".equals(text)) {
@@ -37,21 +36,23 @@ public class VacationConfirmHandler {
             return;
         }
         Boolean newStatus = session.getData("pending_vacation_status", Boolean.class);
-        if (newStatus == null) newStatus = false;
+        if (newStatus == null)
+            newStatus = false;
         Long userId = ctx.getUserId();
         userService.toggleVacation(userId, newStatus);
         User user = userService.getUserWithDepartment(userId).orElse(null);
-        if (user == null) return;
-        String usernameTag = user.getUsername() != null && !user.getUsername().isBlank() ? "(@" + user.getUsername() + ")" : "";
+        if (user == null)
+            return;
+        String usernameTag = BotMessages.usernameTag(user.getUsername());
         String deptName = user.getDepartment() != null ? user.getDepartment().getName() : "не указан";
+        String statusAction = newStatus ? "Ушел в отпуск." : "Вернулся к работе.";
         String msgText = newStatus
                 ? "<b>🌴 ОТПУСК</b>\n\nВы ушли в отпуск.\nУведомления отключены."
                 : "<b>💼 ВОЗВРАЩЕНИЕ</b>\n\nВы вернулись к работе.\nУведомления включены.";
-        String notifyText = newStatus
-                ? "<b>🌴 СМЕНА СТАТУСА</b>\n\n👤 <b>Сотрудник:</b> " + user.getFullName() + " " + usernameTag + "\n🏢 <b>Отдел:</b> " + deptName + "\n\nУшел в отпуск."
-                : "<b>💼 СМЕНА СТАТУСА</b>\n\n👤 <b>Сотрудник:</b> " + user.getFullName() + " " + usernameTag + "\n🏢 <b>Отдел:</b> " + deptName + "\n\nВернулся к работе.";
-        ctx.reply(msgText, "HTML", null,
-                Keyboards.mainMenu(newStatus, Boolean.TRUE.equals(user.getIsAdmin())));
+        String notifyText = "<b>" + (newStatus ? "🌴 СМЕНА СТАТУСА" : "💼 СМЕНА СТАТУСА") + "</b>\n\n"
+                + "👤 <b>Сотрудник:</b> " + user.getFullName() + " " + usernameTag + "\n"
+                + "🏢 <b>Отдел:</b> " + deptName + "\n\n" + statusAction;
+        ctx.reply(msgText, "HTML", null, Keyboards.mainMenuFor(user));
 
         Integer deptId = user.getDepartment() != null ? user.getDepartment().getId() : null;
         botNotificationService.sendToReportRecipients(userId, deptId, notifyText);

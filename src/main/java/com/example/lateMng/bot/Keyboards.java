@@ -1,5 +1,6 @@
 package com.example.lateMng.bot;
 
+import com.example.lateMng.entity.User;
 import com.kaleert.nyagram.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import com.kaleert.nyagram.api.objects.replykeyboard.buttons.KeyboardButton;
 
@@ -8,14 +9,26 @@ import java.util.List;
 
 public final class Keyboards {
 
-    private Keyboards() {}
+    private Keyboards() {
+    }
 
-    public static ReplyKeyboardMarkup mainMenu(boolean isVacation, boolean isAdmin) {
+    public static ReplyKeyboardMarkup mainMenu(boolean isVacation, boolean isAdmin, boolean canMarkEmployees) {
+        return mainMenu(isVacation, isAdmin, canMarkEmployees, false);
+    }
+
+    public static ReplyKeyboardMarkup mainMenu(boolean isVacation, boolean isAdmin,
+            boolean canMarkEmployees, boolean canViewStats) {
         String vacText = isVacation ? "Статус: В отпуске" : "Статус: Работаю";
         var rows = new ArrayList<List<KeyboardButton>>();
         rows.add(List.of(KeyboardButton.text("Опоздаю")));
         rows.add(List.of(KeyboardButton.text("Не приду")));
         rows.add(List.of(KeyboardButton.text(vacText)));
+        if (canMarkEmployees) {
+            rows.add(List.of(KeyboardButton.text("Отметить сотрудника")));
+        }
+        if (canViewStats) {
+            rows.add(List.of(KeyboardButton.text("Статистика")));
+        }
         if (isAdmin) {
             rows.add(List.of(KeyboardButton.text("Админ панель")));
         }
@@ -24,6 +37,14 @@ public final class Keyboards {
                 .keyboard(rows)
                 .resizeKeyboard(true)
                 .build();
+    }
+
+    public static ReplyKeyboardMarkup mainMenuFor(User user) {
+        boolean isVacation = Boolean.TRUE.equals(user.getIsOnVacation());
+        boolean isAdmin = Boolean.TRUE.equals(user.getIsAdmin());
+        boolean canMark = "manager".equals(user.getRole()) || Boolean.TRUE.equals(user.getIsSupervisor());
+        boolean canStats = canMark; // managers and supervisors can view stats
+        return mainMenu(isVacation, isAdmin, canMark, canStats);
     }
 
     public static ReplyKeyboardMarkup reasonsLate() {
@@ -50,7 +71,8 @@ public final class Keyboards {
 
     public static ReplyKeyboardMarkup adminHome() {
         return ReplyKeyboardMarkup.vertical(true,
-                "Новые заявки", "Управление отделами", "Пользователи без отдела", "Ответственные", "Назад");
+                "Новые заявки", "Управление отделами", "Пользователи без отдела",
+                "Ответственные", "Статистика", "Назад");
     }
 
     public static ReplyKeyboardMarkup back() {
