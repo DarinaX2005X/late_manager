@@ -21,6 +21,7 @@ public class MainMenuHandlers {
 
     private final SessionManager sessionManager;
     private final UserService userService;
+    private final com.example.lateMng.bot.admin.StatsAndManualReportHandler statsAndManualReportHandler;
 
     @CommandHandler("Опоздаю")
     @LevelRequired(min = 2)
@@ -58,6 +59,23 @@ public class MainMenuHandlers {
         else
             sessionManager.updateState(uid, FsmStates.ADMIN_HOME);
         ctx.reply("<b>⚙️ ПАНЕЛЬ АДМИНИСТРАТОРА</b>", "HTML", null, Keyboards.adminHome());
+    }
+
+    @CommandHandler(value = "Статистика", hidden = true)
+    @LevelRequired(min = 3)
+    public void onStats(CommandContext ctx) {
+        Long uid = ctx.getUserId();
+        User user = userService.getUserWithDepartment(uid).orElse(null);
+        if (user == null)
+            return;
+        boolean isManager = "manager".equals(user.getRole());
+        boolean isSupervisor = Boolean.TRUE.equals(user.getIsSupervisor());
+        if (!isManager && !isSupervisor) {
+            ctx.reply(BotMessages.err("Эта функция доступна только начальникам и ответственным."),
+                    "HTML", null, Keyboards.mainMenuFor(user));
+            return;
+        }
+        statsAndManualReportHandler.enterStatsFromMainMenu(ctx, user);
     }
 
     @CommandHandler(value = "Информация", hidden = true)
@@ -112,7 +130,29 @@ public class MainMenuHandlers {
             sb.append("\n<i>Никто не получает ваши уведомления.</i>\n");
         }
 
-        ctx.reply(sb.toString(), "HTML", null, Keyboards.mainMenu(user.getIsOnVacation(), user.getIsAdmin()));
+        ctx.reply(sb.toString(), "HTML", null, Keyboards.mainMenuFor(user));
+    }
+
+    @CommandHandler(value = "Отметить сотрудника", hidden = true)
+    @LevelRequired(min = 3)
+    public void onMarkEmployee(CommandContext ctx) {
+        Long uid = ctx.getUserId();
+        User user = userService.getUserWithDepartment(uid).orElse(null);
+        if (user == null)
+            return;
+        boolean isManager = "manager".equals(user.getRole());
+        boolean isSupervisor = Boolean.TRUE.equals(user.getIsSupervisor());
+        if (!isManager && !isSupervisor) {
+            ctx.reply(BotMessages.err("Эта функция доступна только начальникам и ответственным."),
+                    "HTML", null, Keyboards.mainMenuFor(user));
+            return;
+        }
+        UserSession session = sessionManager.getSession(uid);
+        if (session == null)
+            session = sessionManager.startSession(uid, ctx.getChatId(), FsmStates.MANUAL_REPORT_SELECT_USER);
+        else
+            sessionManager.updateState(uid, FsmStates.MANUAL_REPORT_SELECT_USER);
+        statsAndManualReportHandler.showManualUsersList(ctx, session, user);
     }
 
     @CommandHandler("Статус: Работаю")

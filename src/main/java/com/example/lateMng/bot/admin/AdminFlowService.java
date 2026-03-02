@@ -130,7 +130,7 @@ public class AdminFlowService {
     }
 
     static String formatUserLine(User u) {
-        String un = u.getUsername() != null && !u.getUsername().isBlank() ? " (@" + u.getUsername() + ")" : "";
+        String un = BotMessages.usernameTag(u.getUsername());
         String vac = Boolean.TRUE.equals(u.getIsOnVacation()) ? " [В отпуске]" : "";
         return u.getFullName() + un + vac;
     }

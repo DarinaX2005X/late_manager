@@ -2,7 +2,8 @@ package com.example.lateMng.bot;
 
 public final class FsmStates {
 
-    private FsmStates() {}
+    private FsmStates() {
+    }
 
     // Регистрация
     public static final String REGISTRATION_NAME = "REGISTRATION_NAME";
@@ -36,4 +37,16 @@ public final class FsmStates {
     public static final String ADMIN_MANAGING_SUPERVISORS = "ADMIN_MANAGING_SUPERVISORS";
     public static final String ADMIN_ADDING_SUPERVISOR = "ADMIN_ADDING_SUPERVISOR";
     public static final String ADMIN_SELECTING_NO_DEPT_USER = "ADMIN_SELECTING_NO_DEPT_USER";
+
+    // Статистика (начальники/ответственные)
+    public static final String STATS_SCOPE = "STATS_SCOPE";
+    public static final String STATS_MAIN_PERIOD = "STATS_MAIN_PERIOD";
+
+    // Ручная отметка
+    public static final String MANUAL_REPORT_SELECT_USER = "MANUAL_REPORT_SELECT_USER";
+    public static final String MANUAL_REPORT_TYPE = "MANUAL_REPORT_TYPE";
+    public static final String MANUAL_REPORT_REASON = "MANUAL_REPORT_REASON";
+    public static final String MANUAL_REPORT_CUSTOM_REASON = "MANUAL_REPORT_CUSTOM_REASON";
+    public static final String MANUAL_REPORT_LATE_DURATION = "MANUAL_REPORT_LATE_DURATION";
+    public static final String MANUAL_REPORT_CUSTOM_LATE_DURATION = "MANUAL_REPORT_CUSTOM_LATE_DURATION";
 }

@@ -25,6 +25,7 @@ public class AdminFlowHandler {
 
     private final UserService userService;
     private final SessionManager sessionManager;
+    private final StatsAndManualReportHandler statsAndManualReportHandler;
 
     private void goToAdminHome(CommandContext ctx) {
         Long uid = ctx.getUserId();

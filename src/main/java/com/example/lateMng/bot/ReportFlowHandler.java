@@ -110,13 +110,12 @@ public class ReportFlowHandler {
 
     private void goMainMenu(CommandContext ctx) {
         sessionManager.clearSession(ctx.getUserId());
-        User user = userService.getUser(ctx.getUserId()).orElse(null);
+        User user = userService.getUserWithDepartment(ctx.getUserId()).orElse(null);
         if (user == null) {
             ctx.reply("<b>🏠 ГЛАВНОЕ МЕНЮ</b>", "HTML", null, null);
             return;
         }
-        ctx.reply("<b>🏠 ГЛАВНОЕ МЕНЮ</b>", "HTML", null,
-                Keyboards.mainMenu(user.getIsOnVacation(), Boolean.TRUE.equals(user.getIsAdmin())));
+        ctx.reply("<b>🏠 ГЛАВНОЕ МЕНЮ</b>", "HTML", null, Keyboards.mainMenuFor(user));
     }
 
     private void finalizeReport(CommandContext ctx, UserSession session) {
@@ -125,21 +124,25 @@ public class ReportFlowHandler {
         if (dbUser == null || dbUser.getDepartment() == null) {
             sessionManager.clearSession(userId);
             ctx.reply(BotMessages.err("Вы не привязаны к отделу.\nОбратитесь к администратору."),
-                    "HTML", null, Keyboards.mainMenu(false, false));
+                    "HTML", null, Keyboards.mainMenu(false, false, false));
             return;
         }
         String reportType = session.getData("report_type", String.class);
         String reason = session.getData("reason", String.class);
         String timeVal = session.getData("time_val", String.class);
         String reportText = buildReportText(dbUser, reportType, reason, timeVal);
+
+        userService.saveReport(userId, dbUser.getFullName(),
+                dbUser.getDepartment().getId(), dbUser.getDepartment().getName(),
+                reportType, reason, timeVal, false, null, null);
+
         int sentCount = botNotificationService.sendToReportRecipients(userId, dbUser.getDepartment().getId(),
                 reportText);
 
         String confirmText = sentCount > 0
                 ? "<b>✅ ОТЧЕТ ОТПРАВЛЕН</b>\n\nНачальство уведомлено\nПолучателей: <b>" + sentCount + "</b>"
                 : BotMessages.err("Нет получателей, никому не отправлено.");
-        ctx.reply(confirmText, "HTML", null,
-                Keyboards.mainMenu(dbUser.getIsOnVacation(), Boolean.TRUE.equals(dbUser.getIsAdmin())));
+        ctx.reply(confirmText, "HTML", null, Keyboards.mainMenuFor(dbUser));
         sessionManager.clearSession(userId);
     }
 
@@ -148,15 +151,11 @@ public class ReportFlowHandler {
         String deptName = user.getDepartment().getName();
         String sendTime = ZonedDateTime.now(REPORT_TIMEZONE).format(TIME_FORMAT);
         String timeLine = isLateReport(reportType) ? "\n⏱ <b>Придет через:</b> " + timeVal + "\n" : "\n";
-        String usernameTag = formatUsernameTag(user.getUsername());
+        String usernameTag = BotMessages.usernameTag(user.getUsername());
         return "<b>" + title + "</b>\n\n"
                 + "👤 <b>Сотрудник:</b> " + user.getFullName() + usernameTag + "\n"
                 + "🏢 <b>Отдел:</b> " + deptName + "\n"
                 + "📝 <b>Причина:</b> " + reason + timeLine
                 + "🕐 <b>Время отправки:</b> " + sendTime;
-    }
-
-    private static String formatUsernameTag(String username) {
-        return username != null && !username.isBlank() ? " (@" + username + ")" : "";
     }
 }

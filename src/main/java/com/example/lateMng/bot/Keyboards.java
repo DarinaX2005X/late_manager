@@ -72,7 +72,7 @@ public final class Keyboards {
     public static ReplyKeyboardMarkup adminHome() {
         return ReplyKeyboardMarkup.vertical(true,
                 "Новые заявки", "Управление отделами", "Пользователи без отдела",
-                "Ответственные", "Статистика", "Назад");
+                "Ответственные", "Назад");
     }
 
     public static ReplyKeyboardMarkup back() {
