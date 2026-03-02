@@ -1,14 +1,18 @@
 package com.example.lateMng.service;
 
 import com.example.lateMng.entity.Department;
+import com.example.lateMng.entity.Report;
 import com.example.lateMng.entity.User;
 import com.example.lateMng.repository.DepartmentRepository;
+import com.example.lateMng.repository.ReportRepository;
 import com.example.lateMng.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -20,6 +24,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final DepartmentRepository departmentRepository;
+    private final ReportRepository reportRepository;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void addOrUpdateUser(Long userId, String username, String fullName) {
@@ -188,5 +193,45 @@ public class UserService {
             u.setIsSupervisor(isSupervisor);
             userRepository.save(u);
         });
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Report saveReport(Long userId, String fullName, Integer deptId, String deptName,
+            String reportType, String reason, String timeVal,
+            boolean isManual, Long createdById, String createdByName) {
+        return reportRepository.save(Report.builder()
+                .userId(userId)
+                .userFullName(fullName)
+                .departmentId(deptId)
+                .departmentName(deptName)
+                .reportType(reportType)
+                .reason(reason)
+                .timeVal(timeVal)
+                .createdAt(LocalDateTime.now())
+                .isManual(isManual)
+                .createdById(createdById)
+                .createdByName(createdByName)
+                .build());
+    }
+
+    @Transactional(readOnly = true)
+    public List<Report> getReportsByPeriod(LocalDateTime from, LocalDateTime to) {
+        return reportRepository.findByPeriod(from, to);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Report> getReportsByDepartmentAndPeriod(Integer deptId, LocalDateTime from, LocalDateTime to) {
+        return reportRepository.findByDepartmentAndPeriod(deptId, from, to);
+    }
+
+    @Transactional(readOnly = true)
+    public Set<Long> getTodayReportedUserIds() {
+        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+        LocalDateTime tomorrowStart = todayStart.plusDays(1);
+        return new HashSet<>(reportRepository.findReportedUserIdsByPeriod(todayStart, tomorrowStart));
+    }
+
+    public List<Department> getAllDepartments() {
+        return departmentRepository.findAllByOrderByIdAsc();
     }
 }
