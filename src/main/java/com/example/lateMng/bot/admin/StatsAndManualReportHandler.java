@@ -17,17 +17,18 @@ import com.kaleert.nyagram.fsm.UserSession;
 import com.kaleert.nyagram.fsm.annotation.StateAction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
+import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @SuppressWarnings("unused")
 @Component
@@ -238,66 +239,72 @@ public class StatsAndManualReportHandler {
 
     private void exportReportsCsv(CommandContext ctx, List<Report> reports, String periodLabel,
             LocalDateTime from, LocalDateTime to) {
-        StringBuilder csv = new StringBuilder();
-        csv.append('\uFEFF'); // BOM для корректного открытия в Excel
-        csv.append("Дата;Время;ФИО;Отдел;Тип;Причина;Опоздание;Ручная отметка;Отметил\n");
 
-        DateTimeFormatter datePart = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-        DateTimeFormatter timePart = DateTimeFormatter.ofPattern("HH:mm");
-
-        for (Report r : reports) {
-            String date = r.getCreatedAt() != null ? r.getCreatedAt().format(datePart) : "";
-            String time = r.getCreatedAt() != null ? r.getCreatedAt().format(timePart) : "";
-            String type = "late".equals(r.getReportType()) ? "Опоздание" : "Отсутствие";
-            String manual = Boolean.TRUE.equals(r.getIsManual()) ? "Да" : "Нет";
-            String creator = r.getCreatedByName() != null ? r.getCreatedByName() : "";
-            String reason = r.getReason() != null ? r.getReason().replace(";", ",") : "";
-            String dept = r.getDepartmentName() != null ? r.getDepartmentName() : "";
-            String name = r.getUserFullName() != null ? r.getUserFullName() : "";
-            String timeVal = r.getTimeVal() != null ? r.getTimeVal() : "";
-
-            csv.append(date).append(';')
-                    .append(time).append(';')
-                    .append(name).append(';')
-                    .append(dept).append(';')
-                    .append(type).append(';')
-                    .append(reason).append(';')
-                    .append(timeVal).append(';')
-                    .append(manual).append(';')
-                    .append(creator).append('\n');
-        }
-
-        // Определяем является ли отчетом по всем отделам
-        long distinctDepts = reports.stream()
+        boolean multiDept = reports.stream()
                 .map(r -> r.getDepartmentName() != null ? r.getDepartmentName() : "")
-                .distinct().count();
-        boolean multiDept = distinctDepts > 1;
+                .distinct().count() > 1;
 
-        if (multiDept) {
-            // Группируем по отделу и добавляем сводки, затем общую сводку
-            java.util.Map<String, List<Report>> byDept = new java.util.LinkedHashMap<>();
+        String fileName = "report_" + from.format(FILE_DATE_FMT) + "_" + to.minusDays(1).format(FILE_DATE_FMT)
+                + ".xlsx";
+
+        try (XSSFWorkbook wb = new XSSFWorkbook()) {
+            CellStyle headerStyle = wb.createCellStyle();
+            Font headerFont = wb.createFont();
+            headerFont.setBold(true);
+            headerStyle.setFont(headerFont);
+
+            // Лист 1: все отчеты
+            Sheet detailSheet = wb.createSheet("Отчеты");
+            String[] detailHeaders = multiDept
+                    ? new String[]{"Дата", "Время", "ФИО", "Отдел", "Тип", "Причина", "Опоздание", "Ручная отметка",
+                    "Отметил"}
+                    : new String[]{"Дата", "Время", "ФИО", "Тип", "Причина", "Опоздание", "Ручная отметка",
+                    "Отметил"};
+            writeHeaderRow(detailSheet, detailHeaders, headerStyle);
+
+            DateTimeFormatter datePart = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+            DateTimeFormatter timePart = DateTimeFormatter.ofPattern("HH:mm");
+            int rowIdx = 1;
             for (Report r : reports) {
-                String dept = r.getDepartmentName() != null ? r.getDepartmentName() : "Без отдела";
-                byDept.computeIfAbsent(dept, k -> new ArrayList<>()).add(r);
+                Row row = detailSheet.createRow(rowIdx++);
+                int col = 0;
+                row.createCell(col++).setCellValue(r.getCreatedAt() != null ? r.getCreatedAt().format(datePart) : "");
+                row.createCell(col++).setCellValue(r.getCreatedAt() != null ? r.getCreatedAt().format(timePart) : "");
+                row.createCell(col++).setCellValue(r.getUserFullName() != null ? r.getUserFullName() : "");
+                if (multiDept)
+                    row.createCell(col++).setCellValue(r.getDepartmentName() != null ? r.getDepartmentName() : "");
+                row.createCell(col++).setCellValue("late".equals(r.getReportType()) ? "Опоздание" : "Отсутствие");
+                row.createCell(col++).setCellValue(r.getReason() != null ? r.getReason() : "");
+                row.createCell(col++).setCellValue(r.getTimeVal() != null ? r.getTimeVal() : "");
+                row.createCell(col++).setCellValue(Boolean.TRUE.equals(r.getIsManual()) ? "Да" : "Нет");
+                row.createCell(col).setCellValue(r.getCreatedByName() != null ? r.getCreatedByName() : "");
             }
-            for (java.util.Map.Entry<String, List<Report>> entry : byDept.entrySet()) {
-                csv.append('\n');
-                csv.append("Сводка по отделу: ").append(entry.getKey()).append('\n');
-                appendSummaryTable(csv, entry.getValue());
+            detailSheet.setAutoFilter(new CellRangeAddress(0, rowIdx - 1, 0, detailHeaders.length - 1));
+            for (int i = 0; i < detailHeaders.length; i++)
+                detailSheet.autoSizeColumn(i);
+
+            // Листы со сводками
+            if (multiDept) {
+                Map<String, List<Report>> byDept = new LinkedHashMap<>();
+                for (Report r : reports) {
+                    String dept = r.getDepartmentName() != null ? r.getDepartmentName() : "Без отдела";
+                    byDept.computeIfAbsent(dept, k -> new ArrayList<>()).add(r);
+                }
+                for (Map.Entry<String, List<Report>> entry : byDept.entrySet()) {
+                    String sheetName = entry.getKey().length() > 30
+                            ? entry.getKey().substring(0, 30)
+                            : entry.getKey();
+                    writeSummarySheet(wb, sheetName, entry.getValue(), false, headerStyle);
+                }
+                writeSummarySheet(wb, "Общая сводка", reports, true, headerStyle);
+            } else {
+                writeSummarySheet(wb, "Сводка", reports, false, headerStyle);
             }
-            csv.append('\n');
-            csv.append("Общая сводка\n");
-            appendSummaryTable(csv, reports);
-        } else {
-            csv.append('\n');
-            csv.append("Сводка\n");
-            appendSummaryTable(csv, reports);
-        }
 
-        String fileName = "report_" + from.format(FILE_DATE_FMT) + "_" + to.minusDays(1).format(FILE_DATE_FMT) + ".csv";
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            wb.write(out);
+            byte[] bytes = out.toByteArray();
 
-        try {
-            byte[] bytes = csv.toString().getBytes(StandardCharsets.UTF_8);
             var inputFile = new com.kaleert.nyagram.api.objects.InputFile(
                     new ByteArrayInputStream(bytes), fileName);
             var doc = SendDocument.builder()
@@ -307,17 +314,22 @@ public class StatsAndManualReportHandler {
                     .build();
             nyagramClient.execute(doc);
         } catch (Exception e) {
-            log.error("Ошибка экспорта CSV: {}", e.getMessage(), e);
+            log.error("Ошибка экспорта XLSX: {}", e.getMessage(), e);
             ctx.reply(BotMessages.err("Ошибка при создании файла экспорта."), "HTML", null, statsPeriodKeyboard());
         }
     }
 
-    private void appendSummaryTable(StringBuilder csv, List<Report> reports) {
-        csv.append("Сотрудник;Отдел;Опоздания;Отсутствия\n");
+    private void writeSummarySheet(XSSFWorkbook wb, String sheetName, List<Report> reports,
+                                   boolean includeDept, CellStyle headerStyle) {
+        Sheet sheet = wb.createSheet(sheetName);
+        String[] headers = includeDept
+                ? new String[]{"Сотрудник", "Отдел", "Опоздания", "Отсутствия"}
+                : new String[]{"Сотрудник", "Опоздания", "Отсутствия"};
+        writeHeaderRow(sheet, headers, headerStyle);
 
-        java.util.Map<Long, long[]> counts = new java.util.LinkedHashMap<>();
-        java.util.Map<Long, String> names = new java.util.LinkedHashMap<>();
-        java.util.Map<Long, String> depts = new java.util.LinkedHashMap<>();
+        Map<Long, long[]> counts = new LinkedHashMap<>();
+        Map<Long, String> names = new LinkedHashMap<>();
+        Map<Long, String> depts = new LinkedHashMap<>();
 
         for (Report r : reports) {
             long[] arr = counts.computeIfAbsent(r.getUserId(), k -> new long[2]);
@@ -329,16 +341,33 @@ public class StatsAndManualReportHandler {
                 arr[1]++;
         }
 
+        int[] rowRef = {1};
         counts.entrySet().stream()
-                .sorted(java.util.Comparator.<java.util.Map.Entry<Long, long[]>>comparingLong(e -> -(e.getValue()[1]))
+                .sorted(java.util.Comparator.<Map.Entry<Long, long[]>>comparingLong(e -> -(e.getValue()[1]))
                         .thenComparingLong(e -> -(e.getValue()[0])))
                 .forEach(entry -> {
+                    Row row = sheet.createRow(rowRef[0]++);
+                    int col = 0;
                     Long uid = entry.getKey();
-                    csv.append(names.get(uid)).append(';')
-                            .append(depts.get(uid)).append(';')
-                            .append(entry.getValue()[0]).append(';')
-                            .append(entry.getValue()[1]).append('\n');
+                    row.createCell(col++).setCellValue(names.get(uid));
+                    if (includeDept)
+                        row.createCell(col++).setCellValue(depts.get(uid));
+                    row.createCell(col++).setCellValue(entry.getValue()[0]);
+                    row.createCell(col).setCellValue(entry.getValue()[1]);
                 });
+
+        sheet.setAutoFilter(new CellRangeAddress(0, rowRef[0] - 1, 0, headers.length - 1));
+        for (int i = 0; i < headers.length; i++)
+            sheet.autoSizeColumn(i);
+    }
+
+    private void writeHeaderRow(Sheet sheet, String[] headers, CellStyle style) {
+        Row header = sheet.createRow(0);
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = header.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(style);
+        }
     }
 
     // Ручная отметка
