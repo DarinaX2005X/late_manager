@@ -49,7 +49,7 @@ public class MainMenuHandlers {
     }
 
     @CommandHandler(value = "Админ панель", hidden = true)
-    @LevelRequired(min = 3)
+    @LevelRequired(min = 4)
     public void onAdminHome(CommandContext ctx) {
         Long uid = ctx.getUserId();
         UserSession session = sessionManager.getSession(uid);
@@ -89,7 +89,7 @@ public class MainMenuHandlers {
                         sb.append("\n<i>Начальники отдела:</i>\n");
                         hasManagers = true;
                     }
-                    sb.append("• ").append(m.getFullName()).append("\n");
+                    sb.append("- ").append(m.getFullName()).append("\n");
                     hasRecipients = true;
                 }
             }
@@ -103,7 +103,7 @@ public class MainMenuHandlers {
                     sb.append("\n<i>Ответственные:</i>\n");
                     hasSupervisors = true;
                 }
-                sb.append("• ").append(s.getFullName()).append("\n");
+                sb.append("- ").append(s.getFullName()).append("\n");
                 hasRecipients = true;
             }
         }

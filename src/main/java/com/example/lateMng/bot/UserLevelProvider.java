@@ -8,7 +8,8 @@ import org.springframework.stereotype.Component;
 // Уровни:
 // 1) нет/удален/pending
 // 2) обычный пользователь с доступ к боту
-// 3) админ
+// 3) начальник или ответственный
+// 4) админ
 // Использование @LevelRequired(min = 2)
 
 @Component
@@ -19,15 +20,22 @@ public class UserLevelProvider implements com.kaleert.nyagram.security.spi.UserL
 
     @Override
     public Integer getUserLevel(com.kaleert.nyagram.api.objects.User telegramUser) {
-        if (telegramUser == null || telegramUser.getId() == null) return 0;
+        if (telegramUser == null || telegramUser.getId() == null)
+            return 0;
         return userService.getUser(telegramUser.getId())
                 .map(this::levelFor)
                 .orElse(1);
     }
 
     private int levelFor(User u) {
-        if (u.isRemoved() || u.isPending()) return 1;
-        if (!u.isActive()) return 1;
-        return Boolean.TRUE.equals(u.getIsAdmin()) ? 3 : 2;
+        if (u.isRemoved() || u.isPending())
+            return 1;
+        if (!u.isActive())
+            return 1;
+        if (Boolean.TRUE.equals(u.getIsAdmin()))
+            return 4;
+        if ("manager".equals(u.getRole()) || Boolean.TRUE.equals(u.getIsSupervisor()))
+            return 3;
+        return 2;
     }
 }

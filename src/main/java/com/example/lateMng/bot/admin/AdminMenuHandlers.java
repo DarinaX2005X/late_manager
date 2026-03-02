@@ -32,33 +32,32 @@ public class AdminMenuHandlers {
     }
 
     @CommandHandler("Новые заявки")
-    @LevelRequired(min = 3)
+    @LevelRequired(min = 4)
     public void onNewApplications(CommandContext ctx) {
         AdminFlowService.showPendingUsers(ctx, sessionManager, userService);
     }
 
     @CommandHandler("Управление отделами")
-    @LevelRequired(min = 3)
+    @LevelRequired(min = 4)
     public void onManageDepts(CommandContext ctx) {
         AdminFlowService.showDeptsList(ctx, sessionManager, userService);
     }
 
     @CommandHandler("Пользователи без отдела")
-    @LevelRequired(min = 3)
+    @LevelRequired(min = 4)
     public void onNoDeptUsers(CommandContext ctx) {
         AdminFlowService.showNoDeptUsersList(ctx, sessionManager, userService);
     }
 
     @CommandHandler("Ответственные")
-    @LevelRequired(min = 3)
+    @LevelRequired(min = 4)
     public void onSupervisors(CommandContext ctx) {
         AdminFlowService.showSupervisorsScreen(ctx, sessionManager, userService);
     }
 
     private void goMainMenu(CommandContext ctx) {
         sessionManager.clearSession(ctx.getUserId());
-        userService.getUser(ctx.getUserId()).ifPresent(user ->
-                ctx.reply("<b>🏠 ГЛАВНОЕ МЕНЮ</b>", "HTML", null,
-                        Keyboards.mainMenu(user.getIsOnVacation(), Boolean.TRUE.equals(user.getIsAdmin()))));
+        userService.getUserWithDepartment(ctx.getUserId())
+                .ifPresent(user -> ctx.reply("<b>🏠 ГЛАВНОЕ МЕНЮ</b>", "HTML", null, Keyboards.mainMenuFor(user)));
     }
 }

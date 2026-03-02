@@ -18,7 +18,7 @@ public class PendingCallbackHandler {
     private final UserService userService;
 
     @Callback("admin_users_pending")
-    @LevelRequired(min = 3)
+    @LevelRequired(min = 4)
     public void onAdminUsersPending(CommandContext ctx) {
         AdminFlowService.showPendingUsers(ctx, sessionManager, userService);
     }
