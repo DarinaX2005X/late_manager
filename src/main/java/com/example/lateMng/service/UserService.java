@@ -231,6 +231,13 @@ public class UserService {
         return new HashSet<>(reportRepository.findReportedUserIdsByPeriod(todayStart, tomorrowStart));
     }
 
+    @Transactional(readOnly = true)
+    public List<Report> getTodayReportsByDepartment(Integer deptId) {
+        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+        LocalDateTime tomorrowStart = todayStart.plusDays(1);
+        return reportRepository.findByDepartmentAndPeriod(deptId, todayStart, tomorrowStart);
+    }
+
     public List<Department> getAllDepartments() {
         return departmentRepository.findAllByOrderByIdAsc();
     }

@@ -497,7 +497,7 @@ public class StatsAndManualReportHandler {
         Long uid = ctx.getUserId();
         sessionManager.clearSession(uid);
         User user = userService.getUserWithDepartment(uid).orElse(null);
-        ReplyKeyboardMarkup kb = user != null ? Keyboards.mainMenuFor(user) : Keyboards.mainMenu(false, false, false);
+        ReplyKeyboardMarkup kb = user != null ? Keyboards.mainMenuFor(user) : Keyboards.back();
         String msg = extraMessage != null ? extraMessage : "<b>🏠 ГЛАВНОЕ МЕНЮ</b>";
         ctx.reply(msg, "HTML", null, kb);
     }
@@ -506,7 +506,7 @@ public class StatsAndManualReportHandler {
         Long uid = ctx.getUserId();
         sessionManager.clearSession(uid);
         User user = userService.getUserWithDepartment(uid).orElse(null);
-        ReplyKeyboardMarkup kb = user != null ? Keyboards.mainMenuFor(user) : Keyboards.mainMenu(false, false, false);
+        ReplyKeyboardMarkup kb = user != null ? Keyboards.mainMenuFor(user) : Keyboards.back();
         ctx.reply("<b>🏠 ГЛАВНОЕ МЕНЮ</b>", "HTML", null, kb);
     }
 

@@ -12,21 +12,15 @@ public final class Keyboards {
     private Keyboards() {
     }
 
-    public static ReplyKeyboardMarkup mainMenu(boolean isVacation, boolean isAdmin, boolean canMarkEmployees) {
-        return mainMenu(isVacation, isAdmin, canMarkEmployees, false);
-    }
-
-    public static ReplyKeyboardMarkup mainMenu(boolean isVacation, boolean isAdmin,
-            boolean canMarkEmployees, boolean canViewStats) {
+    public static ReplyKeyboardMarkup mainMenuFor(User user) {
+        boolean isVacation = Boolean.TRUE.equals(user.getIsOnVacation());
+        boolean isAdmin = Boolean.TRUE.equals(user.getIsAdmin());
+        boolean canStats = "manager".equals(user.getRole()) || Boolean.TRUE.equals(user.getIsSupervisor());
         String vacText = isVacation ? "Статус: В отпуске" : "Статус: Работаю";
         var rows = new ArrayList<List<KeyboardButton>>();
-        rows.add(List.of(KeyboardButton.text("Опоздаю")));
-        rows.add(List.of(KeyboardButton.text("Не приду")));
+        rows.add(List.of(KeyboardButton.text("Опоздаю"), KeyboardButton.text("Не приду")));
         rows.add(List.of(KeyboardButton.text(vacText)));
-        if (canMarkEmployees) {
-            rows.add(List.of(KeyboardButton.text("Отметить сотрудника")));
-        }
-        if (canViewStats) {
+        if (canStats) {
             rows.add(List.of(KeyboardButton.text("Статистика")));
         }
         if (isAdmin) {
@@ -37,14 +31,6 @@ public final class Keyboards {
                 .keyboard(rows)
                 .resizeKeyboard(true)
                 .build();
-    }
-
-    public static ReplyKeyboardMarkup mainMenuFor(User user) {
-        boolean isVacation = Boolean.TRUE.equals(user.getIsOnVacation());
-        boolean isAdmin = Boolean.TRUE.equals(user.getIsAdmin());
-        boolean canMark = "manager".equals(user.getRole()) || Boolean.TRUE.equals(user.getIsSupervisor());
-        boolean canStats = canMark; // managers and supervisors can view stats
-        return mainMenu(isVacation, isAdmin, canMark, canStats);
     }
 
     public static ReplyKeyboardMarkup reasonsLate() {

@@ -124,7 +124,7 @@ public class ReportFlowHandler {
         if (dbUser == null || dbUser.getDepartment() == null) {
             sessionManager.clearSession(userId);
             ctx.reply(BotMessages.err("Вы не привязаны к отделу.\nОбратитесь к администратору."),
-                    "HTML", null, Keyboards.mainMenu(false, false, false));
+                    "HTML", null, dbUser != null ? Keyboards.mainMenuFor(dbUser) : Keyboards.back());
             return;
         }
         String reportType = session.getData("report_type", String.class);

@@ -1,5 +1,6 @@
 package com.example.lateMng.bot;
 
+import com.example.lateMng.entity.Report;
 import com.example.lateMng.entity.User;
 import com.example.lateMng.service.UserService;
 import com.kaleert.nyagram.command.BotCommand;
@@ -12,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("unused")
 @Component
@@ -88,8 +91,12 @@ public class MainMenuHandlers {
             return;
         }
 
+        boolean isManager = "manager".equals(user.getRole());
+        boolean isSupervisor = Boolean.TRUE.equals(user.getIsSupervisor());
+        boolean canMark = isManager || isSupervisor;
+
         StringBuilder sb = new StringBuilder();
-        sb.append("<b>ℹ️ ИНФОРМАЦИЯ О ПОЛЬЗОВАТЕЛЕ</b>\n\n");
+        sb.append("<b>ℹ️ ИНФОРМАЦИЯ</b>\n\n");
         sb.append("👤 <b>ФИО:</b> ").append(user.getFullName()).append("\n");
         sb.append("🏢 <b>Отдел:</b> ")
                 .append(user.getDepartment() != null ? user.getDepartment().getName() : "Без отдела").append("\n");
@@ -97,15 +104,14 @@ public class MainMenuHandlers {
         sb.append("\n<b>🔔 Кто получает уведомления о ваших отчетах:</b>\n");
 
         boolean hasRecipients = false;
-
         if (user.getDepartment() != null) {
             List<User> managers = userService.getActiveManagersForDepartment(user.getDepartment().getId());
-            boolean hasManagers = false;
+            boolean mgrHdr = false;
             for (User m : managers) {
                 if (!m.getUserId().equals(uid)) {
-                    if (!hasManagers) {
-                        sb.append("\n<i>Начальники отдела:</i>\n");
-                        hasManagers = true;
+                    if (!mgrHdr) {
+                        sb.append("<i>Начальники отдела:</i>\n");
+                        mgrHdr = true;
                     }
                     sb.append("- ").append(m.getFullName()).append("\n");
                     hasRecipients = true;
@@ -114,12 +120,12 @@ public class MainMenuHandlers {
         }
 
         List<User> supervisors = userService.getSupervisors(true);
-        boolean hasSupervisors = false;
+        boolean supHdr = false;
         for (User s : supervisors) {
             if (!s.getUserId().equals(uid)) {
-                if (!hasSupervisors) {
-                    sb.append("\n<i>Ответственные:</i>\n");
-                    hasSupervisors = true;
+                if (!supHdr) {
+                    sb.append("<i>Ответственные:</i>\n");
+                    supHdr = true;
                 }
                 sb.append("- ").append(s.getFullName()).append("\n");
                 hasRecipients = true;
@@ -130,7 +136,54 @@ public class MainMenuHandlers {
             sb.append("\n<i>Никто не получает ваши уведомления.</i>\n");
         }
 
-        ctx.reply(sb.toString(), "HTML", null, Keyboards.mainMenuFor(user));
+        if (canMark) {
+            sb.append("\n<b>📥 Вы получаете отчёты:</b>\n");
+            if (isManager && user.getDepartment() != null) {
+                sb.append("<i>Сотрудники отдела «").append(user.getDepartment().getName()).append("»</i>\n");
+            }
+            if (isSupervisor) {
+                sb.append("<i>Все сотрудники (ответственный)</i>\n");
+            }
+
+            // Статус отдела сегодня
+            if (user.getDepartment() != null) {
+                List<User> members = userService.getEmployeesInDepartment(user.getDepartment().getId());
+                List<Report> todayReports = userService.getTodayReportsByDepartment(user.getDepartment().getId());
+                Map<Long, Report> reportByUser = todayReports.stream()
+                        .collect(Collectors.toMap(Report::getUserId, r -> r, (a, b) -> a));
+
+                sb.append("\n<b>📋 Статус отдела сегодня:</b>\n");
+                sb.append("<i>(нет отметки = пришёл вовремя)</i>\n");
+                for (User m : members) {
+                    if (m.getUserId().equals(uid))
+                        continue;
+                    Report r = reportByUser.get(m.getUserId());
+                    String icon;
+                    String detail = "";
+                    if (Boolean.TRUE.equals(m.getIsOnVacation())) {
+                        icon = "🏖";
+                    } else if (r == null) {
+                        icon = "✅";
+                    } else if ("late".equals(r.getReportType())) {
+                        icon = "⏰";
+                        detail = r.getTimeVal() != null ? " (" + r.getTimeVal() + ")" : "";
+                    } else {
+                        icon = "🚫";
+                    }
+                    sb.append(icon).append(" ").append(m.getFullName()).append(detail).append("\n");
+                }
+            }
+        }
+
+        com.kaleert.nyagram.api.objects.replykeyboard.ReplyKeyboardMarkup kb;
+        if (canMark) {
+            kb = com.kaleert.nyagram.api.objects.replykeyboard.ReplyKeyboardMarkup.vertical(true,
+                    "Отметить сотрудника", "Назад");
+        } else {
+            kb = Keyboards.back();
+        }
+
+        ctx.reply(sb.toString(), "HTML", null, kb);
     }
 
     @CommandHandler(value = "Отметить сотрудника", hidden = true)
