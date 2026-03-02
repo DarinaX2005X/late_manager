@@ -45,8 +45,6 @@ public class StatsAndManualReportHandler {
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final DateTimeFormatter FILE_DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    // Общая статистика
-
     private static ReplyKeyboardMarkup statsPeriodKeyboard() {
         return ReplyKeyboardMarkup.vertical(true,
                 "За неделю", "За месяц",
@@ -54,19 +52,12 @@ public class StatsAndManualReportHandler {
                 "Назад");
     }
 
-    // Статистика (главное меню)
-
-    /**
-     * Начальник: свой отдел + общий
-     * Ответственный: все отделы + общий
-     */
     public void enterStatsFromMainMenu(CommandContext ctx, User user) {
         UserSession session = sessionManager.getSession(ctx.getUserId());
-        if (session == null) {
+        if (session == null)
             session = sessionManager.startSession(ctx.getUserId(), ctx.getChatId(), FsmStates.STATS_SCOPE);
-        } else {
+        else
             sessionManager.updateState(ctx.getUserId(), FsmStates.STATS_SCOPE);
-        }
 
         boolean isManager = "manager".equals(user.getRole());
         boolean isSupervisor = Boolean.TRUE.equals(user.getIsSupervisor());
@@ -86,7 +77,6 @@ public class StatsAndManualReportHandler {
                     rows.add(List.of(KeyboardButton.text("📁 " + d.getName())));
                 }
             }
-            // сохраним ID отделов для поиска
             session.putData("stats_all_depts", true);
         }
 
@@ -178,8 +168,6 @@ public class StatsAndManualReportHandler {
         }
     }
 
-    // Общие методы для статистики
-
     private static class PeriodInfo {
         LocalDateTime from;
         LocalDateTime to;
@@ -196,10 +184,10 @@ public class StatsAndManualReportHandler {
         info.to = today.plusDays(1).atStartOfDay();
         info.isExport = isExport;
 
-        if (cleanText.contains("неделю") || "За неделю".equals(text)) {
+        if (cleanText.contains("неделю")) {
             info.from = today.minusDays(7).atStartOfDay();
             info.label = "за последние 7 дней";
-        } else if (cleanText.contains("месяц") || "За месяц".equals(text)) {
+        } else if (cleanText.contains("месяц")) {
             info.from = today.minusDays(30).atStartOfDay();
             info.label = "за последние 30 дней";
         } else {
@@ -256,10 +244,10 @@ public class StatsAndManualReportHandler {
             // Лист 1: все отчеты
             Sheet detailSheet = wb.createSheet("Отчеты");
             String[] detailHeaders = multiDept
-                    ? new String[]{"Дата", "Время", "ФИО", "Отдел", "Тип", "Причина", "Опоздание", "Ручная отметка",
-                    "Отметил"}
-                    : new String[]{"Дата", "Время", "ФИО", "Тип", "Причина", "Опоздание", "Ручная отметка",
-                    "Отметил"};
+                    ? new String[] { "Дата", "Время", "ФИО", "Отдел", "Тип", "Причина", "Опоздание", "Ручная отметка",
+                            "Отметил" }
+                    : new String[] { "Дата", "Время", "ФИО", "Тип", "Причина", "Опоздание", "Ручная отметка",
+                            "Отметил" };
             writeHeaderRow(detailSheet, detailHeaders, headerStyle);
 
             DateTimeFormatter datePart = DateTimeFormatter.ofPattern("dd.MM.yyyy");
@@ -320,11 +308,11 @@ public class StatsAndManualReportHandler {
     }
 
     private void writeSummarySheet(XSSFWorkbook wb, String sheetName, List<Report> reports,
-                                   boolean includeDept, CellStyle headerStyle) {
+            boolean includeDept, CellStyle headerStyle) {
         Sheet sheet = wb.createSheet(sheetName);
         String[] headers = includeDept
-                ? new String[]{"Сотрудник", "Отдел", "Опоздания", "Отсутствия"}
-                : new String[]{"Сотрудник", "Опоздания", "Отсутствия"};
+                ? new String[] { "Сотрудник", "Отдел", "Опоздания", "Отсутствия" }
+                : new String[] { "Сотрудник", "Опоздания", "Отсутствия" };
         writeHeaderRow(sheet, headers, headerStyle);
 
         Map<Long, long[]> counts = new LinkedHashMap<>();
@@ -341,7 +329,7 @@ public class StatsAndManualReportHandler {
                 arr[1]++;
         }
 
-        int[] rowRef = {1};
+        int[] rowRef = { 1 };
         counts.entrySet().stream()
                 .sorted(java.util.Comparator.<Map.Entry<Long, long[]>>comparingLong(e -> -(e.getValue()[1]))
                         .thenComparingLong(e -> -(e.getValue()[0])))
@@ -369,8 +357,6 @@ public class StatsAndManualReportHandler {
             cell.setCellStyle(style);
         }
     }
-
-    // Ручная отметка
 
     @StateAction(FsmStates.MANUAL_REPORT_SELECT_USER)
     public void onSelectUser(CommandContext ctx, UserSession session) {
@@ -446,7 +432,7 @@ public class StatsAndManualReportHandler {
             sessionManager.updateState(ctx.getUserId(), FsmStates.MANUAL_REPORT_CUSTOM_REASON);
             return;
         }
-        String reason = "Без причины".equals(text) ? "Без причины" : text;
+        String reason = "Без причины".equals(text) ? text : text;
         session.putData("manual_report_reason", reason);
         afterReasonCollected(ctx, session);
     }
@@ -463,10 +449,6 @@ public class StatsAndManualReportHandler {
         afterReasonCollected(ctx, session);
     }
 
-    /**
-     * После сбора причины: если тип = late, спрашиваем длительность,
-     * иначе сохраняем сразу.
-     */
     private void afterReasonCollected(CommandContext ctx, UserSession session) {
         String reportType = session.getData("manual_report_type", String.class);
         if ("late".equals(reportType)) {
@@ -531,13 +513,6 @@ public class StatsAndManualReportHandler {
         goBackFromManualReport(ctx, confirmMsg.toString());
     }
 
-    // Экран выбора сотрудника
-
-    /**
-     * Показывает список сотрудников для ручной отметки
-     * Начальник видит только сотрудников своего отдела
-     * ответственный видит всех
-     */
     public void showManualUsersList(CommandContext ctx, UserSession session, User caller) {
         List<User> users;
         if (caller != null && "manager".equals(caller.getRole())
@@ -548,11 +523,9 @@ public class StatsAndManualReportHandler {
             users = userService.getAllActiveUsers();
         }
 
-        // убираем самого вызывающего из списка
         Long callerId = ctx.getUserId();
         users.removeIf(u -> u.getUserId().equals(callerId));
 
-        // убираем тех, кто уже отметился/отмечен сегодня
         Set<Long> todayReported = userService.getTodayReportedUserIds();
         users.removeIf(u -> todayReported.contains(u.getUserId()));
 
@@ -572,8 +545,6 @@ public class StatsAndManualReportHandler {
         sessionManager.updateState(ctx.getUserId(), FsmStates.MANUAL_REPORT_SELECT_USER);
     }
 
-    // Навигация назад
-
     private void goBackFromManualReport(CommandContext ctx) {
         goBackFromManualReport(ctx, null);
     }
@@ -588,11 +559,7 @@ public class StatsAndManualReportHandler {
     }
 
     private void goBackToMainMenu(CommandContext ctx) {
-        Long uid = ctx.getUserId();
-        sessionManager.clearSession(uid);
-        User user = userService.getUserWithDepartment(uid).orElse(null);
-        ReplyKeyboardMarkup kb = user != null ? Keyboards.mainMenuFor(user) : Keyboards.back();
-        ctx.reply("<b>🏠 ГЛАВНОЕ МЕНЮ</b>", "HTML", null, kb);
+        goBackFromManualReport(ctx, null);
     }
 
     private void goToAdminHome(CommandContext ctx) {

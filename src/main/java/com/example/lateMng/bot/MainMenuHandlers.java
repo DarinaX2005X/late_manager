@@ -8,6 +8,7 @@ import com.kaleert.nyagram.command.CommandContext;
 import com.kaleert.nyagram.command.CommandHandler;
 import com.kaleert.nyagram.fsm.SessionManager;
 import com.kaleert.nyagram.fsm.UserSession;
+import com.kaleert.nyagram.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import com.kaleert.nyagram.security.LevelRequired;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -160,13 +161,9 @@ public class MainMenuHandlers {
             }
         }
 
-        com.kaleert.nyagram.api.objects.replykeyboard.ReplyKeyboardMarkup kb;
-        if (canMark) {
-            kb = com.kaleert.nyagram.api.objects.replykeyboard.ReplyKeyboardMarkup.vertical(true,
-                    "Отметить сотрудника", "Назад");
-        } else {
-            kb = Keyboards.back();
-        }
+        ReplyKeyboardMarkup kb = canMark
+                ? ReplyKeyboardMarkup.vertical(true, "Отметить сотрудника", "Назад")
+                : Keyboards.back();
 
         ctx.reply(sb.toString(), "HTML", null, kb);
     }
