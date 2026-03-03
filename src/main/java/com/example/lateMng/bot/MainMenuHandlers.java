@@ -13,8 +13,10 @@ import com.kaleert.nyagram.security.LevelRequired;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @SuppressWarnings("unused")
@@ -106,10 +108,11 @@ public class MainMenuHandlers {
         sb.append("\n<b>🔔 Кто получает уведомления о ваших отчетах:</b>\n");
 
         boolean hasRecipients = false;
+        Set<Long> addedIds = new HashSet<>();
         if (user.getDepartment() != null) {
             List<User> managers = userService.getActiveManagersForDepartment(user.getDepartment().getId());
             for (User m : managers) {
-                if (!m.getUserId().equals(uid)) {
+                if (!m.getUserId().equals(uid) && addedIds.add(m.getUserId())) {
                     sb.append(m.getFullName())
                             .append(BotMessages.usernameTag(m.getUsername())).append("\n");
                     hasRecipients = true;
@@ -119,7 +122,7 @@ public class MainMenuHandlers {
 
         List<User> supervisors = userService.getSupervisors(true);
         for (User s : supervisors) {
-            if (!s.getUserId().equals(uid)) {
+            if (!s.getUserId().equals(uid) && addedIds.add(s.getUserId())) {
                 sb.append(s.getFullName())
                         .append(BotMessages.usernameTag(s.getUsername())).append("\n");
                 hasRecipients = true;
