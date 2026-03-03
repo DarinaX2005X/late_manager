@@ -209,21 +209,35 @@ public class StatsAndManualReportHandler {
         sb.append("🚫 <b>Отсутствия:</b> ").append(absenceCount).append("\n");
         sb.append("✋ <b>Ручные отметки:</b> ").append(manualCount).append("\n");
 
-        sb.append("\n<b>Подробно:</b>\n");
-        int shown = Math.min(reports.size(), 10);
-        for (int i = 0; i < shown; i++) {
-            Report r = reports.get(i);
-            String type = "late".equals(r.getReportType()) ? "⏰" : "🚫";
-            String manual = Boolean.TRUE.equals(r.getIsManual()) ? " ✋" : "";
-            String date = r.getCreatedAt().format(DATETIME_FMT);
-            sb.append(type).append(" ").append(date).append(" ")
-                    .append(r.getUserFullName())
-                    .append(" - ").append(r.getReason() != null ? r.getReason() : "")
-                    .append(manual).append("\n");
+        Map<Long, long[]> counts = new LinkedHashMap<>();
+        Map<Long, String> names = new LinkedHashMap<>();
+        for (Report r : reports) {
+            long[] arr = counts.computeIfAbsent(r.getUserId(), k -> new long[2]);
+            names.put(r.getUserId(), r.getUserFullName() != null ? r.getUserFullName() : "—");
+            if ("late".equals(r.getReportType()))
+                arr[0]++;
+            else
+                arr[1]++;
         }
-        if (reports.size() > shown) {
-            sb.append("\n... и ещё ").append(reports.size() - shown).append(" записей.");
-        }
+
+        sb.append("\n<b>По сотрудникам:</b>\n");
+        sb.append("<code>").append(String.format("%-20s  ⏰  🚫%n", "Сотрудник"));
+
+        counts.entrySet().stream()
+                .sorted(java.util.Comparator.<Map.Entry<Long, long[]>>comparingLong(
+                        e -> -(e.getValue()[0] + e.getValue()[1]))
+                        .thenComparingLong(e -> -e.getValue()[1]))
+                .forEach(entry -> {
+                    Long uid = entry.getKey();
+                    long late = entry.getValue()[0];
+                    long absence = entry.getValue()[1];
+                    String name = names.get(uid);
+                    if (name.length() > 20)
+                        name = name.substring(0, 19) + "…";
+                    sb.append(String.format("%-20s  %2d  %2d%n", name, late, absence));
+                });
+
+        sb.append("</code>");
         return sb.toString();
     }
 
@@ -434,8 +448,7 @@ public class StatsAndManualReportHandler {
             sessionManager.updateState(ctx.getUserId(), FsmStates.MANUAL_REPORT_CUSTOM_REASON);
             return;
         }
-        String reason = "Без причины".equals(text) ? text : text;
-        session.putData("manual_report_reason", reason);
+        session.putData("manual_report_reason", text);
         afterReasonCollected(ctx, session);
     }
 
