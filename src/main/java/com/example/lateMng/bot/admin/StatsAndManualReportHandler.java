@@ -1,6 +1,7 @@
 package com.example.lateMng.bot.admin;
 
 import com.example.lateMng.bot.BotMessages;
+import com.example.lateMng.bot.BotNotificationService;
 import com.example.lateMng.bot.FsmStates;
 import com.example.lateMng.bot.Keyboards;
 import com.example.lateMng.entity.Department;
@@ -40,6 +41,7 @@ public class StatsAndManualReportHandler {
     private final UserService userService;
     private final SessionManager sessionManager;
     private final NyagramClient nyagramClient;
+    private final BotNotificationService notificationService;
 
     private static final DateTimeFormatter DATETIME_FMT = DateTimeFormatter.ofPattern("dd.MM HH:mm");
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
@@ -208,7 +210,7 @@ public class StatsAndManualReportHandler {
         sb.append("✋ <b>Ручные отметки:</b> ").append(manualCount).append("\n");
 
         sb.append("\n<b>Подробно:</b>\n");
-        int shown = Math.min(reports.size(), 30);
+        int shown = Math.min(reports.size(), 10);
         for (int i = 0; i < shown; i++) {
             Report r = reports.get(i);
             String type = "late".equals(r.getReportType()) ? "⏰" : "🚫";
@@ -502,6 +504,10 @@ public class StatsAndManualReportHandler {
                 reportType, reason, timeVal, true, ctx.getUserId(), creatorName);
 
         String typeLabel = "late".equals(reportType) ? "Опоздание" : "Отсутствие";
+
+        String creatorUsername = creator != null ? creator.getUsername() : null;
+        notificationService.notifyUserManualReport(targetId, typeLabel, reason, timeVal, creatorName, creatorUsername);
+
         StringBuilder confirmMsg = new StringBuilder("<b>✅ ОТМЕТКА СОЗДАНА</b>\n\n");
         confirmMsg.append("<b>Сотрудник:</b> ").append(targetName).append("\n");
         confirmMsg.append("<b>Тип:</b> ").append(typeLabel).append("\n");

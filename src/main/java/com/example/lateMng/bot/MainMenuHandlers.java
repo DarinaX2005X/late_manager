@@ -110,7 +110,7 @@ public class MainMenuHandlers {
             List<User> managers = userService.getActiveManagersForDepartment(user.getDepartment().getId());
             for (User m : managers) {
                 if (!m.getUserId().equals(uid)) {
-                    sb.append("- ").append(m.getFullName())
+                    sb.append(m.getFullName())
                             .append(BotMessages.usernameTag(m.getUsername())).append("\n");
                     hasRecipients = true;
                 }
@@ -120,7 +120,7 @@ public class MainMenuHandlers {
         List<User> supervisors = userService.getSupervisors(true);
         for (User s : supervisors) {
             if (!s.getUserId().equals(uid)) {
-                sb.append("- ").append(s.getFullName())
+                sb.append(s.getFullName())
                         .append(BotMessages.usernameTag(s.getUsername())).append("\n");
                 hasRecipients = true;
             }

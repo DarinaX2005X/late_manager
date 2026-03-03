@@ -42,6 +42,27 @@ public class BotNotificationService {
         }
     }
 
+    public void notifyUserManualReport(Long targetUserId, String typeLabel, String reason,
+                                       String timeVal, String creatorName, String creatorUsername) {
+        StringBuilder sb = new StringBuilder("<b>✋ РУЧНАЯ ОТМЕТКА</b>\n\n")
+                .append("Вам была поставлена отметка менеджером <b>").append(creatorName)
+                .append("</b>").append(BotMessages.usernameTag(creatorUsername)).append(".\n\n")
+                .append("<b>Тип:</b> ").append(typeLabel).append("\n")
+                .append("<b>Причина:</b> ").append(reason != null ? reason : "—");
+        if (timeVal != null) {
+            sb.append("\n<b>Опоздание на:</b> ").append(timeVal);
+        }
+        try {
+            client.execute(SendMessage.builder()
+                    .chatId(targetUserId.toString())
+                    .text(sb.toString())
+                    .parseMode("HTML")
+                    .build());
+        } catch (Exception e) {
+            log.debug("Failed to notify user {} about manual report: {}", targetUserId, e.getMessage());
+        }
+    }
+
     public int sendToReportRecipients(Long senderId, Integer departmentId, String text) {
         var recipientIds = userService.getReportRecipientIds(senderId, departmentId);
         int sent = 0;
